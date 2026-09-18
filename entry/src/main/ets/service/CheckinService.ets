@@ -1,6 +1,7 @@
 import { ALL_CHECKINS, BitFlags, CheckinBit, MealType } from '../model/Enums';
 import { DailySummary } from '../model/DailySummary';
 import { WaterRecord } from '../model/WaterRecord';
+import { ActivityRecord } from '../model/ActivityRecord';
 import { UserProfile } from '../model/UserProfile';
 import { NutritionTotals } from '../model/Totals';
 import { WaterRecordDao } from '../database/WaterRecordDao';
@@ -69,6 +70,26 @@ export class CheckinService {
   /** 撤销最近一次饮水打卡 */
   static async undoLastWater(dateKey: string): Promise<CheckinRefreshResult> {
     await WaterRecordDao.deleteLatestOfDate(dateKey);
+    return await CheckinService.refresh(dateKey);
+  }
+
+  /**
+   * 运动打卡。
+   * @param kcalBurned 由调用方用 EnergyCalculator.calcExerciseKcal 算好传进来，
+   *                   服务层不重复实现一遍 MET 公式
+   */
+  static async addActivity(dateKey: string, activityType: number, durationMin: number,
+    intensity: number, kcalBurned: number): Promise<CheckinRefreshResult> {
+    if (durationMin > 0) {
+      const record: ActivityRecord = new ActivityRecord();
+      record.recordDate = dateKey;
+      record.activityType = activityType;
+      record.durationMin = Math.round(durationMin);
+      record.intensity = intensity;
+      record.kcalBurned = kcalBurned;
+      record.createdAt = Date.now();
+      await ActivityRecordDao.insert(record);
+    }
     return await CheckinService.refresh(dateKey);
   }
 

@@ -1,22 +1,14 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AdviceItem } from '../engine/AdviceEngine';
 import { FormatUtils } from '../utils/FormatUtils';
+import { Theme } from '../utils/Theme';
 import { HomeData, HomeViewModel } from '../viewmodel/HomeViewModel';
+import { SectionTitle } from '../components/SectionTitle';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'HomePage';
 
-/** 打卡卡片的动作编号。-1 表示当前仅为状态展示，录入功能在后续阶段接入 */
-const ACTION_NONE: number = -1;
-const ACTION_WATER: number = 1;
-const ACTION_ROUTINE: number = 2;
-
-/**
- * @Builder 的参数载体。
- *
- * 必须包成"单个对象参数"：@Builder 默认按值传递，多个参数或按值传状态变量时，
- * 状态变化不会引起其内部 UI 刷新。只有"单个参数 + 对象字面量"才走按引用传递。
- */
+/** @Builder 的参数载体：单对象参数才能走按引用传递 */
 class NutrientParam {
   label: string = '';
   current: number = 0;
@@ -28,21 +20,38 @@ class CheckinCardParam {
   title: string = '';
   subtitle: string = '';
   hint: string = '';
-  action: number = ACTION_NONE;
+  done: boolean = false;
+  action: number = 0;
+}
+
+class MetricParam {
+  label: string = '';
+  value: string = '';
+  highlight: boolean = false;
 }
 
 /**
  * 首页：今日总览。
  *
- * 每次打卡后都通过 HomeViewModel 重新取一份完整数据整体替换，
- * 界面不维护自己的副本，也就不存在"界面显示的数值和库里不一致"的问题。
+ * 打卡区刻意不做成一张大卡里的四行，而是四张独立卡片浮在纸上——
+ * 视觉上它们和"热量"是同级的入口，包进一张卡会让它们看起来像附属信息。
  */
 @Component
 export struct HomePage {
+  /** 由 Index 递增，表示数据可能已变化 */
+  @Prop @Watch('onDataChanged') dataVersion: number = 0;
+  /** @param mealType 预选的餐次，传 -1 表示用默认餐次 */
+  onOpenCheckin: (mealType: number) => void = () => {};
+  onOpenActivity: () => void = () => {};
+
   @State data: HomeData = new HomeData();
   @State busy: boolean = false;
 
   aboutToAppear(): void {
+    void this.reload();
+  }
+
+  onDataChanged(): void {
     void this.reload();
   }
 
@@ -72,14 +81,17 @@ export struct HomePage {
   }
 
   private async tapCard(action: number): Promise<void> {
-    if (action === ACTION_WATER) {
+    if (action === 1) {
       await this.applyChange(HomeViewModel.addWater());
-    } else if (action === ACTION_ROUTINE) {
+    } else if (action === 2) {
       await this.applyChange(HomeViewModel.toggleRoutine());
+    } else if (action === 3) {
+      this.onOpenCheckin(-1);
+    } else if (action === 4) {
+      this.onOpenActivity();
     }
   }
 
-  /** 环形进度的取值：摄入超过目标时封顶，避免进度环溢出 */
   private ringValue(): number {
     return Math.min(this.data.intakeKcal, Math.max(this.data.targetKcal, 1));
   }
@@ -89,13 +101,27 @@ export struct HomePage {
   }
 
   @Builder
+  metric(param: MetricParam) {
+    Column({ space: 4 }) {
+      Text(param.value)
+        .fontSize(21)
+        .fontWeight(FontWeight.Bold)
+        .fontColor(param.highlight ? Theme.PRIMARY : Theme.TEXT_PRIMARY)
+        .letterSpacing(0.5)
+      Text(param.label).fontSize(11).fontColor(Theme.TEXT_TERTIARY)
+    }
+    .layoutWeight(1)
+    .alignItems(HorizontalAlign.Start)
+  }
+
+  @Builder
   nutrientRow(param: NutrientParam) {
-    Column({ space: 6 }) {
+    Column({ space: 7 }) {
       Row() {
-        Text(param.label).fontSize(14).fontColor('#4D4D4D')
+        Text(param.label).fontSize(14).fontColor(Theme.TEXT_SECONDARY)
         Blank()
         Text(`${Math.round(param.current)} / ${Math.round(param.target)} g`)
-          .fontSize(13).fontColor('#8A8F99')
+          .fontSize(13).fontColor(Theme.TEXT_TERTIARY)
       }
       .width('100%')
 
@@ -105,30 +131,38 @@ export struct HomePage {
         type: ProgressType.Linear
       })
         .color(param.barColor)
-        .backgroundColor('#EEF1F6')
-        .height(8)
+        .backgroundColor(Theme.TRACK)
+        .height(7)
     }
     .width('100%')
   }
 
   @Builder
   checkinCard(param: CheckinCardParam) {
-    Column({ space: 6 }) {
-      Row() {
-        Text(param.title).fontSize(15).fontWeight(FontWeight.Medium).fontColor('#1A1A1A')
+    Column({ space: 7 }) {
+      Row({ space: 7 }) {
+        // 用定尺寸的空 Text 画状态点：Circle().fill() 要 API 26，
+        // 而本工程 compatibleSdkVersion 是 6.1.0(23)，用它会有兼容性警告
+        Text('')
+          .width(7).height(7)
+          .backgroundColor(param.done ? Theme.SUCCESS : Theme.TRACK)
+          .borderRadius(4)
+        Text(param.title)
+          .fontSize(15)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(Theme.TEXT_PRIMARY)
         Blank()
-        Text(param.hint)
-          .fontSize(11)
-          .fontColor(param.action === ACTION_NONE ? '#C2C7D0' : '#0A59F7')
       }
       .width('100%')
 
-      Text(param.subtitle).fontSize(13).fontColor('#8A8F99').width('100%')
+      Text(param.subtitle).fontSize(12).fontColor(Theme.TEXT_TERTIARY).width('100%')
+      Text(param.hint).fontSize(12).fontColor(Theme.PRIMARY).width('100%')
     }
     .layoutWeight(1)
     .padding(14)
-    .backgroundColor(Color.White)
-    .borderRadius(14)
+    .backgroundColor(Theme.CARD)
+    .borderRadius(Theme.RADIUS_CARD)
+    .border({ width: 1, color: Theme.LINE })
     .onClick(() => {
       void this.tapCard(param.action);
     })
@@ -138,12 +172,13 @@ export struct HomePage {
     Scroll() {
       Column({ space: 14 }) {
 
-        // 顶部：日期与连续天数
+        // 头部
         Row() {
-          Column({ space: 2 }) {
+          Column({ space: 4 }) {
+            Text('今天').fontSize(12).fontColor(Theme.TEXT_TERTIARY).letterSpacing(1)
             Text(FormatUtils.formatDateLabelWithWeek(this.data.dateKey))
-              .fontSize(20).fontWeight(FontWeight.Bold).fontColor('#1A1A1A')
-            Text('今天').fontSize(13).fontColor('#8A8F99')
+              .fontSize(24).fontWeight(FontWeight.Bold).fontColor(Theme.TEXT_PRIMARY)
+              .letterSpacing(0.8)
           }
           .alignItems(HorizontalAlign.Start)
 
@@ -151,116 +186,113 @@ export struct HomePage {
 
           Column({ space: 2 }) {
             Text(`${this.data.streakDays}`)
-              .fontSize(20).fontWeight(FontWeight.Bold).fontColor('#0A59F7')
-            Text('连续天数').fontSize(12).fontColor('#8A8F99')
+              .fontSize(22).fontWeight(FontWeight.Bold).fontColor(Theme.PRIMARY)
+            Text('连续天数').fontSize(11).fontColor(Theme.TEXT_TERTIARY)
           }
-          .padding({ left: 14, right: 14, top: 8, bottom: 8 })
-          .backgroundColor('#F5F8FF')
-          .borderRadius(12)
+          .padding({ left: 16, right: 16, top: 7, bottom: 7 })
+          .backgroundColor(Theme.PRIMARY_SOFT)
+          .borderRadius(Theme.RADIUS_CARD)
+          .border({ width: 1, color: Theme.LINE })
         }
         .width('100%')
+        .alignItems(VerticalAlign.Center)
 
-        // 热量进度环
-        Stack() {
-          Progress({
-            value: this.ringValue(),
-            total: this.ringTotal(),
-            type: ProgressType.Ring
-          })
-            .width(196)
-            .height(196)
-            .color('#0A59F7')
-            .backgroundColor('#E4E9F2')
-            .style({ strokeWidth: 14 })
-
-          Column({ space: 2 }) {
-            Text('已摄入').fontSize(13).fontColor('#8A8F99')
-            Text(`${Math.round(this.data.intakeKcal)}`)
-              .fontSize(34).fontWeight(FontWeight.Bold).fontColor('#1A1A1A')
-            Text(`/ ${Math.round(this.data.targetKcal)} kcal`).fontSize(13).fontColor('#8A8F99')
-            Text(`净 ${Math.round(this.data.intakeKcal - this.data.burnedKcal)} kcal`)
-              .fontSize(12).fontColor('#B0B5BF').margin({ top: 4 })
-          }
-        }
-        .width('100%')
-        .height(220)
-        .padding({ top: 10, bottom: 10 })
-        .backgroundColor(Color.White)
-        .borderRadius(16)
-
-        // 健康分与运动消耗
-        Row({ space: 12 }) {
-          Column({ space: 4 }) {
-            Text('健康分').fontSize(13).fontColor('#8A8F99')
-            Row({ space: 3 }) {
-              Text(`${this.data.score}`)
-                .fontSize(24).fontWeight(FontWeight.Bold).fontColor('#0A59F7')
-              Text('/100').fontSize(12).fontColor('#8A8F99')
+        // 饭点提醒：正处在饭点窗口且该餐还没记录时，给一条可点的提示
+        if (this.data.showMealPrompt) {
+          Row({ space: 10 }) {
+            Text('')
+              .width(3).height(30)
+              .backgroundColor(Theme.PRIMARY)
+              .borderRadius(2)
+            Column({ space: 3 }) {
+              Text(this.data.mealPromptTitle)
+                .fontSize(14).fontWeight(FontWeight.Medium).fontColor(Theme.PRIMARY)
+              Text(this.data.mealPromptDesc).fontSize(12).fontColor(Theme.TEXT_SECONDARY)
             }
-            .alignItems(VerticalAlign.Bottom)
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1)
+            Text('去记录').fontSize(13).fontColor(Theme.PRIMARY)
           }
-          .layoutWeight(1)
-          .alignItems(HorizontalAlign.Start)
+          .width('100%')
           .padding(14)
-          .backgroundColor(Color.White)
-          .borderRadius(14)
+          .backgroundColor(Theme.PRIMARY_SOFT)
+          .borderRadius(Theme.RADIUS_CARD)
+          .border({ width: 1, color: Theme.PRIMARY_LINE })
+          .onClick(() => {
+            this.onOpenCheckin(this.data.mealPromptMealType);
+          })
+        } else if (this.data.nextMealHint.length > 0) {
+          Row({ space: 8 }) {
+            Text('')
+              .width(5).height(5)
+              .backgroundColor(Theme.TEXT_TERTIARY)
+              .borderRadius(3)
+            Text(this.data.nextMealHint).fontSize(12).fontColor(Theme.TEXT_TERTIARY)
+            Blank()
+          }
+          .width('100%')
+          .padding({ left: 4, right: 4 })
+        }
 
-          Column({ space: 4 }) {
-            Text('运动消耗').fontSize(13).fontColor('#8A8F99')
-            Row({ space: 3 }) {
-              Text(`${Math.round(this.data.burnedKcal)}`)
-                .fontSize(24).fontWeight(FontWeight.Bold).fontColor('#1A1A1A')
-              Text('kcal').fontSize(12).fontColor('#8A8F99')
+        // 热量主卡
+        Column({ space: 14 }) {
+          Stack() {
+            Progress({
+              value: this.ringValue(),
+              total: this.ringTotal(),
+              type: ProgressType.Ring
+            })
+              .width(180)
+              .height(180)
+              .color(Theme.PRIMARY)
+              .backgroundColor(Theme.TRACK)
+              .style({ strokeWidth: 12 })
+
+            Column({ space: 2 }) {
+              Text('已摄入').fontSize(12).fontColor(Theme.TEXT_TERTIARY).letterSpacing(1)
+              Text(`${Math.round(this.data.intakeKcal)}`)
+                .fontSize(34).fontWeight(FontWeight.Bold).fontColor(Theme.TEXT_PRIMARY)
+                .letterSpacing(1)
+              Text(`/ ${Math.round(this.data.targetKcal)} kcal`)
+                .fontSize(12).fontColor(Theme.TEXT_TERTIARY)
             }
-            .alignItems(VerticalAlign.Bottom)
           }
-          .layoutWeight(1)
-          .alignItems(HorizontalAlign.Start)
-          .padding(14)
-          .backgroundColor(Color.White)
-          .borderRadius(14)
-        }
-        .width('100%')
+          .width('100%')
+          .height(190)
 
-        // 营养素
-        Column({ space: 12 }) {
-          Text('营养素').fontSize(15).fontWeight(FontWeight.Medium).fontColor('#1A1A1A')
-            .width('100%')
-          this.nutrientRow({
-            label: '蛋白质', current: this.data.proteinG,
-            target: this.data.targetProteinG, barColor: '#0A59F7'
-          })
-          this.nutrientRow({
-            label: '脂肪', current: this.data.fatG,
-            target: this.data.targetFatG, barColor: '#E8A33D'
-          })
-          this.nutrientRow({
-            label: '碳水', current: this.data.carbG,
-            target: this.data.targetCarbG, barColor: '#28A76E'
-          })
+          Divider().color(Theme.DIVIDER)
+
+          Row({ space: 8 }) {
+            this.metric({
+              label: '目标 kcal', value: `${Math.round(this.data.targetKcal)}`, highlight: false
+            })
+            this.metric({
+              label: '运动消耗', value: `${Math.round(this.data.burnedKcal)}`, highlight: false
+            })
+            this.metric({
+              label: '健康分', value: `${this.data.score}`, highlight: true
+            })
+          }
+          .width('100%')
         }
         .width('100%')
-        .padding(16)
-        .backgroundColor(Color.White)
-        .borderRadius(16)
+        .padding(18)
+        .backgroundColor(Theme.CARD)
+        .borderRadius(Theme.RADIUS_CARD)
+        .border({ width: 1, color: Theme.LINE })
 
         // 打卡入口
         Column({ space: 12 }) {
-          Row() {
-            Text('今日打卡').fontSize(15).fontWeight(FontWeight.Medium).fontColor('#1A1A1A')
-            Blank()
-            Text(`已记录 ${this.data.mealCount} 餐`).fontSize(12).fontColor('#B0B5BF')
-          }
-          .width('100%')
+          SectionTitle({ text: '今日打卡', trailing: `已记录 ${this.data.mealCount} 餐` })
 
           Row({ space: 12 }) {
             this.checkinCard({
               title: '三餐', subtitle: `已记录 ${this.data.mealCount} 餐`,
-              hint: '录入待接入', action: ACTION_NONE
+              hint: '去记录', done: this.data.mealCount > 0, action: 3
             })
             this.checkinCard({
               title: '运动', subtitle: `已运动 ${Math.round(this.data.activityMin)} 分钟`,
-              hint: '录入待接入', action: ACTION_NONE
+              hint: '去记录', done: this.data.activityMin > 0, action: 4
             })
           }
           .width('100%')
@@ -270,68 +302,96 @@ export struct HomePage {
               title: '饮水',
               subtitle: `${Math.round(this.data.waterMl)} / ${Math.round(this.data.targetWaterMl)} ml`,
               hint: this.data.waterDone ? '已达标' : '+250ml',
-              action: ACTION_WATER
+              done: this.data.waterDone, action: 1
             })
             this.checkinCard({
               title: '作息',
-              subtitle: this.data.routineDone ? '今天作息规律' : '还没打卡',
+              subtitle: this.data.routineDone ? '今天作息规律' : '还没有打卡',
               hint: this.data.routineDone ? '已打卡' : '点我打卡',
-              action: ACTION_ROUTINE
+              done: this.data.routineDone, action: 2
             })
           }
           .width('100%')
         }
         .width('100%')
 
+        // 营养素
+        Column({ space: 14 }) {
+          SectionTitle({ text: '营养素', accent: Theme.SUCCESS })
+          this.nutrientRow({
+            label: '蛋白质', current: this.data.proteinG,
+            target: this.data.targetProteinG, barColor: Theme.PRIMARY
+          })
+          this.nutrientRow({
+            label: '脂肪', current: this.data.fatG,
+            target: this.data.targetFatG, barColor: Theme.WARNING
+          })
+          this.nutrientRow({
+            label: '碳水', current: this.data.carbG,
+            target: this.data.targetCarbG, barColor: Theme.SUCCESS
+          })
+        }
+        .width('100%')
+        .padding(18)
+        .backgroundColor(Theme.CARD)
+        .borderRadius(Theme.RADIUS_CARD)
+        .border({ width: 1, color: Theme.LINE })
+
         // 新解锁徽章
         if (this.data.newBadgeNames.length > 0) {
-          Column({ space: 6 }) {
-            Text('解锁新徽章').fontSize(14).fontWeight(FontWeight.Medium).fontColor('#8A5B00')
-              .width('100%')
-            Text(this.data.newBadgeNames.join('、')).fontSize(15).fontColor('#8A5B00')
-              .width('100%')
+          Row({ space: 10 }) {
+            Text('')
+              .width(7).height(7)
+              .backgroundColor(Theme.WARNING)
+              .borderRadius(4)
+            Column({ space: 3 }) {
+              Text('解锁新徽章').fontSize(12).fontColor(Theme.GOLD_TEXT).letterSpacing(0.6)
+              Text(this.data.newBadgeNames.join('、')).fontSize(15).fontColor(Theme.GOLD_TEXT)
+            }
+            .alignItems(HorizontalAlign.Start)
+            Blank()
           }
           .width('100%')
           .padding(14)
-          .backgroundColor('#FFF7E6')
-          .borderRadius(14)
+          .backgroundColor(Theme.WARNING_SOFT)
+          .borderRadius(Theme.RADIUS_CARD)
+          .border({ width: 1, color: Theme.WARNING_LINE })
         }
 
         // 今日建议
-        Column({ space: 12 }) {
-          Text('今日建议').fontSize(15).fontWeight(FontWeight.Medium).fontColor('#1A1A1A')
-            .width('100%')
+        Column({ space: 14 }) {
+          SectionTitle({ text: '今日建议', accent: Theme.WARNING })
 
-          // 建议文案由 code 决定，因此 key 里带 code 即可保证内容变化时重建
           ForEach(this.data.advices, (item: AdviceItem) => {
             Row({ space: 10 }) {
               Divider()
                 .vertical(true)
-                .height(16)
+                .height(15)
                 .strokeWidth(3)
-                .color(item.severity === 1 ? '#E8A33D' : '#0A59F7')
-              Text(item.text).fontSize(14).fontColor('#4D4D4D').layoutWeight(1)
+                .color(item.severity === 1 ? Theme.WARNING : Theme.PRIMARY)
+              Text(item.text).fontSize(14).fontColor(Theme.TEXT_SECONDARY).layoutWeight(1)
             }
             .width('100%')
             .alignItems(VerticalAlign.Center)
           }, (item: AdviceItem, index: number) => `${index}-${item.code}`)
         }
         .width('100%')
-        .padding(16)
-        .backgroundColor(Color.White)
-        .borderRadius(16)
+        .padding(18)
+        .backgroundColor(Theme.CARD)
+        .borderRadius(Theme.RADIUS_CARD)
+        .border({ width: 1, color: Theme.LINE })
 
         if (!this.data.hasProfile) {
           Text('尚未完成个人资料，目标值暂时无法计算')
-            .fontSize(13).fontColor('#E8A33D').width('100%').textAlign(TextAlign.Center)
+            .fontSize(13).fontColor(Theme.WARNING).width('100%').textAlign(TextAlign.Center)
         }
       }
       .width('100%')
-      .padding({ left: 16, right: 16, top: 20, bottom: 28 })
+      // 底部留出 Dock 的高度，避免最后一张卡被悬浮栏压住
+      .padding({ left: 18, right: 18, top: 22, bottom: 108 })
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F1F3F5')
     .scrollBar(BarState.Off)
   }
 }

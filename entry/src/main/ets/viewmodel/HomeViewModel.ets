@@ -4,6 +4,8 @@ import { MealRecordDao } from '../database/MealRecordDao';
 import { CheckinRefreshResult, CheckinService } from '../service/CheckinService';
 import { DailyPlan } from '../service/PlanService';
 import { DateUtils } from '../utils/DateUtils';
+import { FormatUtils } from '../utils/FormatUtils';
+import { MealSchedule, MealWindow } from '../utils/MealSchedule';
 
 /** 首页渲染所需的全部数据。整对象替换即可触发刷新，避免深层状态同步问题 */
 export class HomeData {
@@ -31,6 +33,15 @@ export class HomeData {
   advices: AdviceItem[] = [];
   /** 本次操作新解锁的徽章名称 */
   newBadgeNames: string[] = [];
+
+  /** 正处在某个饭点窗口内、且该餐还没记录时为 true */
+  showMealPrompt: boolean = false;
+  /** 提示对应的餐次，点击时用它预选录入页的餐次 */
+  mealPromptMealType: number = -1;
+  mealPromptTitle: string = '';
+  mealPromptDesc: string = '';
+  /** 非饭点时的下一餐提示，如"距晚餐还有 2 小时 15 分"；空串表示不显示 */
+  nextMealHint: string = '';
 }
 
 /**
@@ -113,9 +124,39 @@ export class HomeViewModel {
 
     const mealTypes: number[] = await MealRecordDao.mealTypesOfDate(summary.recordDate);
     data.mealCount = mealTypes.length;
+    HomeViewModel.fillMealPrompt(data, mealTypes);
 
     data.advices = HomeViewModel.buildAdvices(summary, plan);
     return data;
+  }
+
+  /**
+   * 饭点提示。
+   *
+   * 只在"正处在饭点窗口内 + 该餐还没记录"时才弹提示，窗口一过就自动消失——
+   * 不弹过往的餐次，否则下午三点提醒你记早餐只会变成噪音。
+   * 不在窗口内时退化成"距离下一餐还有多久"，让用户知道下一次该在什么时候记录。
+   */
+  private static fillMealPrompt(data: HomeData, recordedMealTypes: number[]): void {
+    const hour: number = DateUtils.currentHour();
+    const minute: number = DateUtils.currentMinute();
+
+    const current: MealWindow | undefined = MealSchedule.currentWindow(hour, minute);
+    if (current !== undefined && recordedMealTypes.indexOf(current.mealType) < 0) {
+      data.showMealPrompt = true;
+      data.mealPromptMealType = current.mealType;
+      data.mealPromptTitle = `${current.label}时间到了`;
+      data.mealPromptDesc = `今天还没记录${current.label}`;
+      return;
+    }
+
+    const next: MealWindow | undefined = MealSchedule.nextWindow(hour, minute);
+    if (next === undefined) {
+      data.nextMealHint = '今天的饭点都过去了，加餐也记得记一下';
+      return;
+    }
+    const remain: number = MealSchedule.minutesUntil(next, hour, minute);
+    data.nextMealHint = `距${next.label}还有 ${FormatUtils.formatMinutes(remain)}`;
   }
 
   /** 组装建议引擎的输入 */

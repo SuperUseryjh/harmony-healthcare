@@ -11,6 +11,14 @@
     {
       "name": "EntryAbility_label",
       "value": "label"
+    },
+    {
+      "name": "calendar_read_reason",
+      "value": "用于读取本应用写入的饭点提醒日程，避免重复创建"
+    },
+    {
+      "name": "calendar_write_reason",
+      "value": "用于把早午晚餐的打卡提醒写入系统日历，应用关闭后仍能准时提醒"
     }
   ]
 }

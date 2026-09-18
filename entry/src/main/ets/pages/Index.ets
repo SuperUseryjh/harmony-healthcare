@@ -1,8 +1,14 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { DbHelper } from '../database/DbHelper';
 import { UserProfileDao } from '../database/UserProfileDao';
+import { DockItem, FloatingDock } from '../components/FloatingDock';
+import { Theme } from '../utils/Theme';
+import { ActivityPage } from './ActivityPage';
+import { AnalysisPage } from './AnalysisPage';
+import { CheckinPage } from './CheckinPage';
 import { HomePage } from './HomePage';
 import { OnboardingPage } from './OnboardingPage';
+import { ProfilePage } from './ProfilePage';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'Index';
@@ -11,21 +17,45 @@ const BOOT_LOADING: number = 0;
 const BOOT_ONBOARDING: number = 1;
 const BOOT_HOME: number = 2;
 
+const TAB_HOME: number = 0;
+const TAB_ANALYSIS: number = 1;
+const TAB_PROFILE: number = 2;
+
+/** 二级页以全屏覆盖的形式出现，盖住内容与 Dock */
+const OVERLAY_NONE: number = 0;
+const OVERLAY_CHECKIN: number = 1;
+const OVERLAY_ACTIVITY: number = 2;
+const OVERLAY_PROFILE_EDIT: number = 3;
+
+const DOCK_ITEMS: DockItem[] = [
+  new DockItem('首页'), new DockItem('趋势'), new DockItem('我的')];
+
 /**
  * 应用入口。
  *
- * 只做一件事：等数据库就绪，检查有没有用户档案，决定进引导页还是首页。
+ * 一级页面（首页 / 趋势 / 我的）通过底部悬浮 Dock 切换，不用路由栈——
+ * 三者是平级的，没有"返回"语义，用栈反而会让返回行为变得含糊。
  *
- * 数据库的实际初始化在 EntryAbility.onCreate 里发起，这里只等它完成——
- * 这样页面侧不需要再获取一次 Context，也不会出现两处各自建库的情况。
+ * 二级页（记录三餐 / 记录运动 / 编辑档案）是明确的"进入 → 完成 → 退出"流程，
+ * 用全屏覆盖承载，盖住 Dock 以阻止中途切换。
  *
- * 子页面（打卡、分析、我的）将在后续阶段接入 Navigation，目前用条件渲染即可。
+ * 数据联动：任何写入完成后把 dataVersion +1，各页面用 @Prop @Watch 感知并重新取数。
+ * 这样页面不需要判断"我是不是被返回的那个"，行为只取决于数据是否变过。
+ *
+ * 注意：成员名不要用 currentTab / activeOverlay 之外的近义短名。
+ * tabIndex、overlay 这类名字与 ArkUI CustomComponent 的内置属性同名，
+ * 会因为类型不匹配直接编译失败。
  */
 @Entry
 @Component
 struct Index {
   @State bootState: number = BOOT_LOADING;
   @State errorMessage: string = '';
+  @State currentTab: number = TAB_HOME;
+  @State activeOverlay: number = OVERLAY_NONE;
+  @State dataVersion: number = 0;
+  /** 打开三餐录入页时要预选的餐次，-1 表示用默认值 */
+  @State checkinMealType: number = -1;
 
   aboutToAppear(): void {
     void this.bootstrap();
@@ -46,37 +76,120 @@ struct Index {
     }
   }
 
+  /** @param changed 数据是否发生了变化；变了才需要通知各页刷新 */
+  private closeOverlay(changed: boolean): void {
+    this.activeOverlay = OVERLAY_NONE;
+    if (changed) {
+      this.dataVersion = this.dataVersion + 1;
+    }
+  }
+
+  @Builder
+  bootScreen() {
+    Column({ space: 14 }) {
+      LoadingProgress().width(44).height(44).color(Theme.PRIMARY)
+      Text('正在准备…').fontSize(14).fontColor(Theme.TEXT_TERTIARY)
+    }
+    .width('100%')
+    .height('100%')
+    .justifyContent(FlexAlign.Center)
+  }
+
+  @Builder
+  errorScreen() {
+    Column({ space: 10 }) {
+      Text('出了点问题').fontSize(18).fontWeight(FontWeight.Medium).fontColor(Theme.TEXT_PRIMARY)
+      Text(this.errorMessage).fontSize(14).fontColor(Theme.TEXT_TERTIARY).textAlign(TextAlign.Center)
+    }
+    .width('100%')
+    .height('100%')
+    .padding(32)
+    .justifyContent(FlexAlign.Center)
+  }
+
   build() {
     Stack() {
       if (this.errorMessage.length > 0) {
-        Column({ space: 10 }) {
-          Text('出了点问题').fontSize(18).fontWeight(FontWeight.Medium).fontColor('#1A1A1A')
-          Text(this.errorMessage).fontSize(14).fontColor('#8A8F99').textAlign(TextAlign.Center)
-        }
-        .width('100%')
-        .height('100%')
-        .padding(32)
-        .justifyContent(FlexAlign.Center)
+        this.errorScreen()
       } else if (this.bootState === BOOT_LOADING) {
-        Column({ space: 14 }) {
-          LoadingProgress().width(48).height(48).color('#0A59F7')
-          Text('正在准备…').fontSize(14).fontColor('#8A8F99')
-        }
-        .width('100%')
-        .height('100%')
-        .justifyContent(FlexAlign.Center)
+        this.bootScreen()
       } else if (this.bootState === BOOT_ONBOARDING) {
+        // 首次启动必须先完成档案，因此这一屏没有退出入口
         OnboardingPage({
           onFinished: () => {
             this.bootState = BOOT_HOME;
           }
         })
       } else {
-        HomePage()
+        Column() {
+          if (this.currentTab === TAB_HOME) {
+            HomePage({
+              dataVersion: this.dataVersion,
+              onOpenCheckin: (mealType: number) => {
+                this.checkinMealType = mealType;
+                this.activeOverlay = OVERLAY_CHECKIN;
+              },
+              onOpenActivity: () => {
+                this.activeOverlay = OVERLAY_ACTIVITY;
+              }
+            })
+              .transition(TransitionEffect.OPACITY.animation({ duration: 180 }))
+          } else if (this.currentTab === TAB_ANALYSIS) {
+            AnalysisPage({ dataVersion: this.dataVersion })
+              .transition(TransitionEffect.OPACITY.animation({ duration: 180 }))
+          } else {
+            ProfilePage({
+              dataVersion: this.dataVersion,
+              onEditProfile: () => {
+                this.activeOverlay = OVERLAY_PROFILE_EDIT;
+              }
+            })
+              .transition(TransitionEffect.OPACITY.animation({ duration: 180 }))
+          }
+        }
+        .width('100%')
+        .height('100%')
+
+        FloatingDock({
+          items: DOCK_ITEMS,
+          selected: this.currentTab,
+          onPick: (index: number) => {
+            this.currentTab = index;
+          }
+        })
+        .margin({ bottom: 22 })
+
+        if (this.activeOverlay === OVERLAY_CHECKIN) {
+          CheckinPage({
+            initialMealType: this.checkinMealType,
+            onClose: (changed: boolean) => {
+              this.closeOverlay(changed);
+            }
+          })
+        } else if (this.activeOverlay === OVERLAY_ACTIVITY) {
+          ActivityPage({
+            onClose: (changed: boolean) => {
+              this.closeOverlay(changed);
+            }
+          })
+        } else if (this.activeOverlay === OVERLAY_PROFILE_EDIT) {
+          OnboardingPage({
+            onFinished: () => {
+              this.closeOverlay(true);
+            },
+            onCancel: () => {
+              this.closeOverlay(false);
+            }
+          })
+        }
       }
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(Color.White)
+    .alignContent(Alignment.Bottom)
+    .linearGradient({
+      angle: 180,
+      colors: [[Theme.BG_TOP, 0.0], [Theme.BG_BOTTOM, 1.0]]
+    })
   }
 }

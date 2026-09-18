@@ -70,4 +70,9 @@ export class DateUtils {
   static currentHour(): number {
     return new Date(Date.now()).getHours();
   }
+
+  /** 现在是本小时第几分钟（0-59），用于饭点窗口判断 */
+  static currentMinute(): number {
+    return new Date(Date.now()).getMinutes();
+  }
 }

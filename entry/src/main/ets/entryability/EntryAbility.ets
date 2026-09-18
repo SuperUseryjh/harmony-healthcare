@@ -3,12 +3,16 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { DbHelper } from '../database/DbHelper';
+import { AppContext } from '../utils/AppContext';
 
 const DOMAIN = 0x0000;
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
+    // 注入 AbilityContext：页面侧的日历能力与配置存储都要用它，
+    // 在这里注入一次，页面就不必各自做带 undefined 判断的 Context 转换
+    AppContext.set(this.context);
     // 建库、建表、首次启动导入预置食物库。
     // 不阻塞 Ability 启动，失败时只记日志，由页面层在取不到数据时给出提示。
     DbHelper.init(this.context).catch((err: BusinessError) => {
