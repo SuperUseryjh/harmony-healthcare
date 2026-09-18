@@ -3,6 +3,7 @@ import energyCalculatorTest from './EnergyCalculator.test';
 import nutritionAnalyzerTest from './NutritionAnalyzer.test';
 import healthScoreCalculatorTest from './HealthScoreCalculator.test';
 import adviceEngineTest from './AdviceEngine.test';
+import petEngineTest from './PetEngine.test';
 
 /**
  * 本地单元测试套件入口。
@@ -16,4 +17,5 @@ export default function testsuite() {
   nutritionAnalyzerTest();
   healthScoreCalculatorTest();
   adviceEngineTest();
+  petEngineTest();
 }

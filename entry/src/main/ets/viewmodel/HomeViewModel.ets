@@ -1,11 +1,16 @@
 import { AdviceContext, AdviceEngine, AdviceItem } from '../engine/AdviceEngine';
+import { PetEngine, PetState } from '../engine/PetEngine';
 import { DailySummary } from '../model/DailySummary';
+import { PetSpecies, PetSpeciesCatalog } from '../model/PetSpecies';
 import { MealRecordDao } from '../database/MealRecordDao';
+import { DailySummaryDao } from '../database/DailySummaryDao';
 import { CheckinRefreshResult, CheckinService } from '../service/CheckinService';
 import { DailyPlan } from '../service/PlanService';
+import { PetService } from '../service/PetService';
 import { DateUtils } from '../utils/DateUtils';
 import { FormatUtils } from '../utils/FormatUtils';
 import { MealSchedule, MealWindow } from '../utils/MealSchedule';
+import { PetDebug } from '../utils/PetDebug';
 
 /** 首页渲染所需的全部数据。整对象替换即可触发刷新，避免深层状态同步问题 */
 export class HomeData {
@@ -42,6 +47,15 @@ export class HomeData {
   mealPromptDesc: string = '';
   /** 非饭点时的下一餐提示，如"距晚餐还有 2 小时 15 分"；空串表示不显示 */
   nextMealHint: string = '';
+
+  /** 今日已记录的主餐数（早/午/晚），加餐不计入 */
+  mainMealCount: number = 0;
+  /** 当前宠物物种 */
+  speciesCode: string = PetSpeciesCatalog.defaultCode();
+  speciesLabel: string =
+    PetSpeciesCatalog.find(PetSpeciesCatalog.defaultCode()).label;
+  /** 宠物状态 */
+  pet: PetState = new PetState();
 }
 
 /**
@@ -124,7 +138,25 @@ export class HomeViewModel {
 
     const mealTypes: number[] = await MealRecordDao.mealTypesOfDate(summary.recordDate);
     data.mealCount = mealTypes.length;
+    data.mainMealCount = PetEngine.countMainMeals(mealTypes);
     HomeViewModel.fillMealPrompt(data, mealTypes);
+
+    const species: PetSpecies =
+      PetSpeciesCatalog.find(await PetService.loadSpeciesCode());
+    data.speciesCode = species.code;
+    data.speciesLabel = species.label;
+
+    // 宠物的"年龄"用累计有记录的天数，而不是注册天数——
+    // 后者躺着也能涨，前者必须真的记录过才算
+    const growDays: number = await DailySummaryDao.countDays();
+    data.pet = PetEngine.evaluate(data.mainMealCount, data.activityMin, data.waterDone,
+      data.streakDays, growDays, species);
+
+    // 调试预设优先：长按宠物卡片切换，只覆盖显示、不改真实数据
+    const debugPet: PetState | undefined = PetDebug.resolve(species);
+    if (debugPet !== undefined) {
+      data.pet = debugPet;
+    }
 
     data.advices = HomeViewModel.buildAdvices(summary, plan);
     return data;

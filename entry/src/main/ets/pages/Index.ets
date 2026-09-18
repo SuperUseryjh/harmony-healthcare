@@ -2,6 +2,9 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { DbHelper } from '../database/DbHelper';
 import { UserProfileDao } from '../database/UserProfileDao';
 import { DockItem, FloatingDock } from '../components/FloatingDock';
+import { PetDebugPanel } from '../components/PetDebugPanel';
+import { PetPickerPanel } from '../components/PetPickerPanel';
+import { PetService } from '../service/PetService';
 import { Theme } from '../utils/Theme';
 import { ActivityPage } from './ActivityPage';
 import { AnalysisPage } from './AnalysisPage';
@@ -26,6 +29,10 @@ const OVERLAY_NONE: number = 0;
 const OVERLAY_CHECKIN: number = 1;
 const OVERLAY_ACTIVITY: number = 2;
 const OVERLAY_PROFILE_EDIT: number = 3;
+/** 宠物调试面板，长按首页宠物卡片唤出 */
+const OVERLAY_PET_DEBUG: number = 4;
+/** 宠物物种选择，点击首页宠物卡片唤出 */
+const OVERLAY_PET_PICKER: number = 5;
 
 const DOCK_ITEMS: DockItem[] = [
   new DockItem('首页'), new DockItem('趋势'), new DockItem('我的')];
@@ -54,6 +61,10 @@ struct Index {
   @State currentTab: number = TAB_HOME;
   @State activeOverlay: number = OVERLAY_NONE;
   @State dataVersion: number = 0;
+  /** 打开物种选择面板时，由首页把当前的伙伴状态带上来，缩略图按真实阶段渲染 */
+  @State pickerCode: string = '';
+  @State pickerStage: number = 0;
+  @State pickerExpression: number = 0;
   /** 打开三餐录入页时要预选的餐次，-1 表示用默认值 */
   @State checkinMealType: number = -1;
 
@@ -82,6 +93,20 @@ struct Index {
     if (changed) {
       this.dataVersion = this.dataVersion + 1;
     }
+  }
+
+  /**
+   * 保存选中的物种并通知首页刷新。
+   * 面板不关闭，用户可以继续比较；首页在背后已经换好了，关掉就能看到。
+   */
+  private applySpecies(code: string): void {
+    PetService.saveSpeciesCode(code)
+      .then(() => {
+        this.dataVersion = this.dataVersion + 1;
+      })
+      .catch((err: Object) => {
+        hilog.error(DOMAIN, TAG, '保存宠物外观失败: %{public}s', JSON.stringify(err));
+      });
   }
 
   @Builder
@@ -131,6 +156,15 @@ struct Index {
               },
               onOpenActivity: () => {
                 this.activeOverlay = OVERLAY_ACTIVITY;
+              },
+              onOpenPetDebug: () => {
+                this.activeOverlay = OVERLAY_PET_DEBUG;
+              },
+              onOpenPetPicker: (code: string, stage: number, expression: number) => {
+                this.pickerCode = code;
+                this.pickerStage = stage;
+                this.pickerExpression = expression;
+                this.activeOverlay = OVERLAY_PET_PICKER;
               }
             })
               .transition(TransitionEffect.OPACITY.animation({ duration: 180 }))
@@ -179,6 +213,26 @@ struct Index {
             },
             onCancel: () => {
               this.closeOverlay(false);
+            }
+          })
+        } else if (this.activeOverlay === OVERLAY_PET_DEBUG) {
+          // 关闭时统一递增 dataVersion，首页会重新取数并应用/撤销调试预设
+          PetDebugPanel({
+            onClose: () => {
+              this.closeOverlay(true);
+            }
+          })
+        } else if (this.activeOverlay === OVERLAY_PET_PICKER) {
+          PetPickerPanel({
+            currentCode: this.pickerCode,
+            stage: this.pickerStage,
+            expression: this.pickerExpression,
+            onClose: () => {
+              // 每次点选都已经递增过 dataVersion，这里不必再刷一遍
+              this.closeOverlay(false);
+            },
+            onPick: (code: string) => {
+              this.applySpecies(code);
             }
           })
         }

@@ -4,6 +4,7 @@ import { FormatUtils } from '../utils/FormatUtils';
 import { Theme } from '../utils/Theme';
 import { HomeData, HomeViewModel } from '../viewmodel/HomeViewModel';
 import { SectionTitle } from '../components/SectionTitle';
+import { PetView } from '../components/PetView';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'HomePage';
@@ -30,6 +31,12 @@ class MetricParam {
   highlight: boolean = false;
 }
 
+class PetBarParam {
+  label: string = '';
+  value: number = 0;
+  color: string = '';
+}
+
 /**
  * 首页：今日总览。
  *
@@ -43,6 +50,10 @@ export struct HomePage {
   /** @param mealType 预选的餐次，传 -1 表示用默认餐次 */
   onOpenCheckin: (mealType: number) => void = () => {};
   onOpenActivity: () => void = () => {};
+  /** 长按宠物卡片唤出调试面板 */
+  onOpenPetDebug: () => void = () => {};
+  /** 点击宠物卡片更换物种；把当前状态一并交给面板，缩略图按真实阶段渲染 */
+  onOpenPetPicker: (code: string, stage: number, expression: number) => void = () => {};
 
   @State data: HomeData = new HomeData();
   @State busy: boolean = false;
@@ -112,6 +123,21 @@ export struct HomePage {
     }
     .layoutWeight(1)
     .alignItems(HorizontalAlign.Start)
+  }
+
+  @Builder
+  petBar(param: PetBarParam) {
+    Row({ space: 8 }) {
+      Text(param.label).fontSize(10).fontColor(Theme.TEXT_TERTIARY).width(24)
+      Progress({ value: param.value, total: 100, type: ProgressType.Linear })
+        .color(param.color)
+        .backgroundColor(Theme.TRACK)
+        .height(6)
+        .layoutWeight(1)
+      Text(`${Math.round(param.value)}`)
+        .fontSize(10).fontColor(Theme.TEXT_TERTIARY).width(20).textAlign(TextAlign.End)
+    }
+    .width('100%')
   }
 
   @Builder
@@ -196,6 +222,64 @@ export struct HomePage {
         }
         .width('100%')
         .alignItems(VerticalAlign.Center)
+
+        // 宠物：把"照顾它"和"坚持记录"做成同一件事，所以放在最显眼的位置
+        Column({ space: 12 }) {
+          Row({ space: 6 }) {
+            PetView({
+              speciesCode: this.data.speciesCode,
+              stage: this.data.pet.stage,
+              expression: this.data.pet.expression
+            })
+
+            Column({ space: 9 }) {
+              Row() {
+                Text(`${this.data.speciesLabel} · ${this.data.pet.stageName}`)
+                  .fontSize(15).fontWeight(FontWeight.Medium).fontColor(Theme.TEXT_PRIMARY)
+                Text(` · 已陪伴 ${this.data.pet.growDays} 天`)
+                  .fontSize(12).fontColor(Theme.TEXT_TERTIARY)
+                Blank()
+                Text(this.data.pet.isMaxStage ? '已成熟' : `再 ${this.data.pet.daysToNextStage} 天成长`)
+                  .fontSize(11).fontColor(Theme.PRIMARY)
+              }
+              .width('100%')
+
+              this.petBar({ label: '饱食', value: this.data.pet.fullness, color: Theme.PRIMARY })
+              this.petBar({ label: '活力', value: this.data.pet.vitality, color: Theme.SUCCESS })
+              this.petBar({ label: '心情', value: this.data.pet.mood, color: Theme.WARNING })
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start)
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
+
+          Row({ space: 8 }) {
+            Text('')
+              .width(3).height(14)
+              .backgroundColor(Theme.PRIMARY)
+              .borderRadius(2)
+            Text(this.data.pet.message)
+              .fontSize(13).fontColor(Theme.TEXT_SECONDARY).layoutWeight(1)
+            Text('更换 ›')
+              .fontSize(11).fontColor(Theme.TEXT_TERTIARY)
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
+        }
+        .width('100%')
+        .padding(16)
+        .backgroundColor(Theme.CARD)
+        .borderRadius(Theme.RADIUS_CARD)
+        .border({ width: 1, color: Theme.LINE })
+        .onClick(() => {
+          this.onOpenPetPicker(this.data.speciesCode, this.data.pet.stage,
+            this.data.pet.expression);
+        })
+        // 长按唤出宠物调试：做成隐藏入口，正式演示时不会露出来
+        .gesture(LongPressGesture().onAction(() => {
+          this.onOpenPetDebug();
+        }))
 
         // 饭点提醒：正处在饭点窗口且该餐还没记录时，给一条可点的提示
         if (this.data.showMealPrompt) {
