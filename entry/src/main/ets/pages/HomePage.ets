@@ -196,29 +196,49 @@ export struct HomePage {
 
   build() {
     Scroll() {
-      Column({ space: 14 }) {
+      Column({ space: 16 }) {
 
         // 头部
-        Row() {
-          Column({ space: 4 }) {
-            Text('今天').fontSize(12).fontColor(Theme.TEXT_TERTIARY).letterSpacing(1)
+                Row() {
+          Column({ space: 5 }) {
+            Text('今日概览')
+              .fontSize(13)
+              .fontColor(Theme.TEXT_TERTIARY)
+
             Text(FormatUtils.formatDateLabelWithWeek(this.data.dateKey))
-              .fontSize(24).fontWeight(FontWeight.Bold).fontColor(Theme.TEXT_PRIMARY)
-              .letterSpacing(0.8)
+              .fontSize(25)
+              .fontWeight(FontWeight.Bold)
+              .fontColor(Theme.TEXT_PRIMARY)
           }
           .alignItems(HorizontalAlign.Start)
 
           Blank()
 
-          Column({ space: 2 }) {
+          Row({ space: 7 }) {
+            Text('连续')
+              .fontSize(11)
+              .fontColor(Theme.TEXT_SECONDARY)
+
             Text(`${this.data.streakDays}`)
-              .fontSize(22).fontWeight(FontWeight.Bold).fontColor(Theme.PRIMARY)
-            Text('连续天数').fontSize(11).fontColor(Theme.TEXT_TERTIARY)
+              .fontSize(23)
+              .fontWeight(FontWeight.Bold)
+              .fontColor(Theme.PRIMARY)
+
+            Text('天')
+              .fontSize(11)
+              .fontColor(Theme.TEXT_SECONDARY)
           }
-          .padding({ left: 16, right: 16, top: 7, bottom: 7 })
+          .height(42)
+          .padding({
+            left: 12,
+            right: 12
+          })
           .backgroundColor(Theme.PRIMARY_SOFT)
-          .borderRadius(Theme.RADIUS_CARD)
-          .border({ width: 1, color: Theme.LINE })
+          .borderRadius(Theme.RADIUS_CHIP)
+          .border({
+            width: 1,
+            color: Theme.PRIMARY_LINE
+          })
         }
         .width('100%')
         .alignItems(VerticalAlign.Center)
@@ -227,9 +247,18 @@ export struct HomePage {
         Column({ space: 12 }) {
           Row({ space: 6 }) {
             PetView({
-              speciesCode: this.data.speciesCode,
-              stage: this.data.pet.stage,
-              expression: this.data.pet.expression
+              imagePath: this.data.pet.imagePath,
+              expression: this.data.pet.expression,
+              stageScale: this.data.pet.stageScale,
+              faceCx: this.data.pet.face.cx,
+              faceCy: this.data.pet.face.cy,
+              faceEyeDx: this.data.pet.face.eyeDx,
+              faceEyeDy: this.data.pet.face.eyeDy,
+              faceEyeR: this.data.pet.face.eyeR,
+              faceBlushDx: this.data.pet.face.blushDx,
+              faceBlushDy: this.data.pet.face.blushDy,
+              faceBlushR: this.data.pet.face.blushR,
+              faceSingle: this.data.pet.face.single
             })
 
             Column({ space: 9 }) {
@@ -472,7 +501,7 @@ export struct HomePage {
       }
       .width('100%')
       // 底部留出 Dock 的高度，避免最后一张卡被悬浮栏压住
-      .padding({ left: 18, right: 18, top: 22, bottom: 108 })
+      .padding({ left: 20, right: 20, top: 20, bottom: 116 })
     }
     .width('100%')
     .height('100%')

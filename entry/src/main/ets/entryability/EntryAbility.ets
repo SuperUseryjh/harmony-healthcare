@@ -3,6 +3,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { DbHelper } from '../database/DbHelper';
+import { PetCatalog } from '../model/PetSpecies';
 import { AppContext } from '../utils/AppContext';
 
 const DOMAIN = 0x0000;
@@ -17,6 +18,11 @@ export default class EntryAbility extends UIAbility {
     // 不阻塞 Ability 启动，失败时只记日志，由页面层在取不到数据时给出提示。
     DbHelper.init(this.context).catch((err: BusinessError) => {
       hilog.error(DOMAIN, 'testTag', '数据库初始化失败: %{public}s', JSON.stringify(err));
+    });
+    // 宠物造型配置。页面侧会 await PetCatalog.waitReady() 再取，
+    // 所以这里同样不阻塞 Ability 启动
+    PetCatalog.init(this.context).catch((err: BusinessError) => {
+      hilog.error(DOMAIN, 'testTag', '宠物配置装载失败: %{public}s', JSON.stringify(err));
     });
   }
 

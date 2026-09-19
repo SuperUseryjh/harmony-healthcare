@@ -1,15 +1,8 @@
 import { Theme } from '../utils/Theme';
 
-/**
- * 覆盖页的顶部操作条。
- *
- * 记录三餐、记录运动、编辑档案这类页面以全屏覆盖的形式出现（盖住 Dock），
- * 因此需要一个明确的退出入口，而不是依赖系统返回手势。
- */
 @Component
 export struct OverlayHeader {
   title: string = '';
-  /** 左侧退出按钮的文案：新建流程用"取消"，编辑流程用"返回" */
   closeLabel: string = '取消';
   onClose: () => void = () => {};
 
@@ -17,8 +10,14 @@ export struct OverlayHeader {
     Column() {
       Row() {
         Text(this.closeLabel)
-          .fontSize(15)
+          .fontSize(14)
           .fontColor(Theme.TEXT_SECONDARY)
+          .padding({
+            left: 8,
+            right: 8,
+            top: 8,
+            bottom: 8
+          })
           .onClick(() => {
             this.onClose();
           })
@@ -26,20 +25,29 @@ export struct OverlayHeader {
         Blank()
 
         Text(this.title)
-          .fontSize(16)
+          .fontSize(17)
           .fontWeight(FontWeight.Medium)
           .fontColor(Theme.TEXT_PRIMARY)
-          .letterSpacing(0.6)
 
         Blank()
+
+        Text('')
+          .width(48)
+          .height(1)
       }
       .width('100%')
-      .height(48)
-      .padding({ left: 20, right: 20 })
+      .height(56)
+      .padding({
+        left: 16,
+        right: 16
+      })
+      .alignItems(VerticalAlign.Center)
 
-      Divider().color(Theme.LINE)
+      Divider()
+        .color(Theme.DIVIDER)
+        .strokeWidth(1)
     }
     .width('100%')
-    .backgroundColor(Theme.BG_TOP)
+    .backgroundColor(Theme.CARD)
   }
 }

@@ -1,56 +1,52 @@
 /**
- * 全局视觉规范 —— 纸感手帐风。
+ * Harmony 健康看板视觉令牌。
  *
- * 三条规则贯穿所有页面：
- *   1. 不用阴影，只用 1px 细描边。阴影是"现代扁平卡片"的信号，正是要避开的东西。
- *   2. 底色偏暖（米黄纸），文字用暖墨色而不是纯黑，避免冷硬。
- *   3. 圆角收小（8 / 6），接近纸片的直角感，而不是现代 UI 的大圆角胶囊。
- *
- * 字段名沿用改造前的一套，这样各页面只需要换值、不必改引用点。
+ * 页面整体采用：
+ * - 冷白背景
+ * - 深墨色文字
+ * - 珊瑚色主行动色
+ * - 薄荷绿健康状态色
+ * - 低对比度边框
  */
 export class Theme {
-  /** 页面底色：上浅下略深的纸色 */
-  static readonly BG_TOP: string = '#F8F4EB';
-  static readonly BG_BOTTOM: string = '#F1EBDD';
+  static readonly BG_TOP: string = '#F4F7F6';
+  static readonly BG_BOTTOM: string = '#F4F7F6';
 
-  /** 卡片纸面，比页面底更亮一点，靠色差而非阴影区分层次 */
-  static readonly CARD: string = '#FFFDF8';
-  /** 描边：分隔卡片与纸底 */
-  static readonly LINE: string = '#E3DACA';
+  static readonly CARD: string = '#FFFFFF';
+  static readonly LINE: string = '#E2EBE8';
 
-  /** 主点缀色：赭红，像手帐里的红印章 */
-  static readonly PRIMARY: string = '#B4543C';
-  static readonly PRIMARY_SOFT: string = '#F6E7E1';
-  /** 强调底色的描边：比 LINE 略暖，用于主色块 */
-  static readonly PRIMARY_LINE: string = '#E8CFC6';
-  /** 达标/正向：橄榄绿 */
-  static readonly SUCCESS: string = '#5F7A55';
-  /** 提醒/偏离：芥末黄 */
-  static readonly WARNING: string = '#C08A2E';
-  static readonly WARNING_SOFT: string = '#F8F0DE';
-  static readonly WARNING_LINE: string = '#E8D9B8';
-  static readonly GOLD_TEXT: string = '#8A6420';
+  /** 主操作色：记录、保存、热量进度 */
+  static readonly PRIMARY: string = '#E45B49';
+  static readonly PRIMARY_SOFT: string = '#FFF0EC';
+  static readonly PRIMARY_LINE: string = '#F5C9C0';
 
-  /** 文字三级：暖墨色，不用纯黑 */
-  static readonly TEXT_PRIMARY: string = '#3D3830';
-  static readonly TEXT_SECONDARY: string = '#7A7266';
-  static readonly TEXT_TERTIARY: string = '#A69C8C';
-  static readonly TEXT_DISABLED: string = '#C8BFB0';
+  /** 健康状态色 */
+  static readonly SUCCESS: string = '#3E9D78';
 
-  static readonly DIVIDER: string = '#EDE6D8';
-  /** 进度条底槽 */
-  static readonly TRACK: string = '#EDE6D8';
-  /** Dock 底色：不透明纸面（原来的半透明磨砂偏现代，换掉） */
-  static readonly FROSTED: string = '#FFFDF8';
-  /** Dock 轮廓 */
-  static readonly HAIRLINE: string = '#D2C6B0';
+  /** 提醒色 */
+  static readonly WARNING: string = '#D59435';
+  static readonly WARNING_SOFT: string = '#FFF6E5';
+  static readonly WARNING_LINE: string = '#F1D8A8';
+  static readonly GOLD_TEXT: string = '#A36C18';
 
-  static readonly RADIUS_CARD: number = 8;
-  static readonly RADIUS_CHIP: number = 6;
-  static readonly RADIUS_DOCK: number = 12;
+  /** 文字层级 */
+  static readonly TEXT_PRIMARY: string = '#17231F';
+  static readonly TEXT_SECONDARY: string = '#56635E';
+  static readonly TEXT_TERTIARY: string = '#8A9993';
+  static readonly TEXT_DISABLED: string = '#B9C5C0';
 
-  /** 图表里"无记录"的柱色 */
-  static readonly BAR_EMPTY: string = '#E7E0D2';
-  /** 图表里"摄入偏少"的柱色 */
-  static readonly BAR_UNDER: string = '#8FA383';
+  static readonly DIVIDER: string = '#EDF2F0';
+  static readonly TRACK: string = '#E8EFEC';
+
+  /** 底部导航 */
+  static readonly FROSTED: string = '#FFFFFF';
+  static readonly HAIRLINE: string = '#D8E4E0';
+
+  static readonly RADIUS_CARD: number = 12;
+  static readonly RADIUS_CHIP: number = 9;
+  static readonly RADIUS_DOCK: number = 18;
+
+  /** 趋势图 */
+  static readonly BAR_EMPTY: string = '#DCE7E3';
+  static readonly BAR_UNDER: string = '#78B79B';
 }

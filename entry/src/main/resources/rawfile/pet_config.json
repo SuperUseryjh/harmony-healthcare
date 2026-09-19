@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "note": "宠物造型配置。stages 数量不限，按 minDays 从小到大排列，取最后一个满足 minDays<=累计记录天数 的阶段。scale 是该阶段整体缩放（与图片尺寸无关，用于让表情跟着身体一起缩放）。image 为 rawfile 下的相对路径，替换 PNG 只需改这里的文件名。hint 中的 {n} 会替换成距下一阶段的天数，只在第一阶段显示。face 可以写在物种上作为默认，也可以写在某个阶段上覆盖它（蛋和长大后的脸不在同一个位置）；都省略时用默认正面脸型（两只眼 + 两块腮红）。坐标为以图片中心为原点的逻辑坐标，实际渲染时会乘以该阶段的 scale。",
+
+  "species": [
+    {
+      "code": "duck",
+      "label": "小鸭",
+      "face": {
+        "cx": 14, "cy": -10,
+        "eyeDx": 5, "eyeDy": -4, "eyeR": 3.2,
+        "blushDx": 1, "blushDy": 9, "blushR": 3.6,
+        "single": true
+      },
+      "stages": [
+        {
+          "name": "蛋", "minDays": 0, "scale": 1.0, "image": "pets/duck_1.svg",
+          "hint": "再记录 {n} 天就能孵化了",
+          "face": {
+            "cx": 0, "cy": 8,
+            "eyeDx": 9, "eyeDy": 0, "eyeR": 3,
+            "blushDx": 15, "blushDy": 7, "blushR": 3.5,
+            "single": false
+          }
+        },
+        { "name": "小鸭", "minDays": 7, "scale": 0.85, "image": "pets/duck_2.svg" },
+        { "name": "大鸭", "minDays": 30, "scale": 1.0, "image": "pets/duck_3.svg" }
+      ]
+    },
+    {
+      "code": "strawberry",
+      "label": "草莓",
+      "stages": [
+        { "name": "青果", "minDays": 0, "scale": 0.8, "image": "pets/strawberry_1.svg", "hint": "再记录 {n} 天就长开了" },
+        { "name": "半熟", "minDays": 7, "scale": 0.92, "image": "pets/strawberry_2.svg" },
+        { "name": "熟透", "minDays": 30, "scale": 1.0, "image": "pets/strawberry_3.svg" }
+      ]
+    },
+    {
+      "code": "peach",
+      "label": "桃子",
+      "stages": [
+        { "name": "青果", "minDays": 0, "scale": 0.8, "image": "pets/peach_1.svg", "hint": "再记录 {n} 天就长开了" },
+        { "name": "半熟", "minDays": 7, "scale": 0.92, "image": "pets/peach_2.svg" },
+        { "name": "熟透", "minDays": 30, "scale": 1.0, "image": "pets/peach_3.svg" }
+      ]
+    },
+    {
+      "code": "lemon",
+      "label": "柠檬",
+      "stages": [
+        { "name": "青果", "minDays": 0, "scale": 0.8, "image": "pets/lemon_1.svg", "hint": "再记录 {n} 天就长开了" },
+        { "name": "半熟", "minDays": 7, "scale": 0.92, "image": "pets/lemon_2.svg" },
+        { "name": "熟透", "minDays": 30, "scale": 1.0, "image": "pets/lemon_3.svg" }
+      ]
+    },
+    {
+      "code": "orange",
+      "label": "橙子",
+      "stages": [
+        { "name": "青果", "minDays": 0, "scale": 0.8, "image": "pets/orange_1.svg", "hint": "再记录 {n} 天就长开了" },
+        { "name": "半熟", "minDays": 7, "scale": 0.92, "image": "pets/orange_2.svg" },
+        { "name": "熟透", "minDays": 30, "scale": 1.0, "image": "pets/orange_3.svg" }
+      ]
+    },
+    {
+      "code": "watermelon",
+      "label": "西瓜",
+      "stages": [
+        { "name": "青果", "minDays": 0, "scale": 0.8, "image": "pets/watermelon_1.svg", "hint": "再记录 {n} 天就长开了" },
+        { "name": "半熟", "minDays": 7, "scale": 0.92, "image": "pets/watermelon_2.svg" },
+        { "name": "熟透", "minDays": 30, "scale": 1.0, "image": "pets/watermelon_3.svg" }
+      ]
+    },
+    {
+      "code": "apple",
+      "label": "苹果",
+      "stages": [
+        { "name": "青果", "minDays": 0, "scale": 0.8, "image": "pets/apple_1.svg", "hint": "再记录 {n} 天就长开了" },
+        { "name": "半熟", "minDays": 7, "scale": 0.92, "image": "pets/apple_2.svg" },
+        { "name": "熟透", "minDays": 30, "scale": 1.0, "image": "pets/apple_3.svg" }
+      ]
+    },
+    {
+      "code": "kiwi",
+      "label": "猕猴桃",
+      "stages": [
+        { "name": "青果", "minDays": 0, "scale": 0.8, "image": "pets/kiwi_1.svg", "hint": "再记录 {n} 天就长开了" },
+        { "name": "半熟", "minDays": 7, "scale": 0.92, "image": "pets/kiwi_2.svg" },
+        { "name": "熟透", "minDays": 30, "scale": 1.0, "image": "pets/kiwi_3.svg" }
+      ]
+    },
+    {
+      "code": "grape",
+      "label": "葡萄",
+      "stages": [
+        { "name": "青果", "minDays": 0, "scale": 0.8, "image": "pets/grape_1.svg", "hint": "再记录 {n} 天就长开了" },
+        { "name": "半熟", "minDays": 7, "scale": 0.92, "image": "pets/grape_2.svg" },
+        { "name": "熟透", "minDays": 30, "scale": 1.0, "image": "pets/grape_3.svg" }
+      ]
+    },
+    {
+      "code": "banana",
+      "label": "香蕉",
+      "stages": [
+        { "name": "青果", "minDays": 0, "scale": 0.8, "image": "pets/banana_1.svg", "hint": "再记录 {n} 天就长开了" },
+        { "name": "半熟", "minDays": 7, "scale": 0.92, "image": "pets/banana_2.svg" },
+        { "name": "熟透", "minDays": 30, "scale": 1.0, "image": "pets/banana_3.svg" }
+      ]
+    },
+    {
+      "code": "avocado",
+      "label": "牛油果",
+      "stages": [
+        { "name": "青果", "minDays": 0, "scale": 0.8, "image": "pets/avocado_1.svg", "hint": "再记录 {n} 天就长开了" },
+        { "name": "半熟", "minDays": 7, "scale": 0.92, "image": "pets/avocado_2.svg" },
+        { "name": "熟透", "minDays": 30, "scale": 1.0, "image": "pets/avocado_3.svg" }
+      ]
+    },
+    {
+      "code": "blueberry",
+      "label": "蓝莓",
+      "stages": [
+        { "name": "青果", "minDays": 0, "scale": 0.8, "image": "pets/blueberry_1.svg", "hint": "再记录 {n} 天就长开了" },
+        { "name": "半熟", "minDays": 7, "scale": 0.92, "image": "pets/blueberry_2.svg" },
+        { "name": "熟透", "minDays": 30, "scale": 1.0, "image": "pets/blueberry_3.svg" }
+      ]
+    }
+  ]
+}

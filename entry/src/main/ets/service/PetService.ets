@@ -1,6 +1,6 @@
 import { preferences } from '@kit.ArkData';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { PetSpeciesCatalog } from '../model/PetSpecies';
+import { PetCatalog } from '../model/PetSpecies';
 import { AppContext } from '../utils/AppContext';
 
 const DOMAIN: number = 0x0000;
@@ -18,18 +18,21 @@ const KEY_SPECIES: string = 'species_code';
  */
 export class PetService {
 
-  /** 读不到、读到非法值都回落到默认物种 */
+  /** 读不到、读到配置里已不存在的物种，都回落到配置里的第一个 */
   static async loadSpeciesCode(): Promise<string> {
     try {
       const store: preferences.Preferences =
         await preferences.getPreferences(AppContext.get(), STORE_NAME);
-      const raw = await store.get(KEY_SPECIES, PetSpeciesCatalog.defaultCode());
+      const raw = await store.get(KEY_SPECIES, '');
       const code: string = typeof raw === 'string' ? raw : '';
-      // 走一次 find：物种下线或配置被改坏时自动回落，不让界面拿到空编码
-      return PetSpeciesCatalog.find(code).code;
+      // 校验一次：物种被下线或配置被改坏时不会让界面拿到无效编码
+      if (code.length > 0 && PetCatalog.find(code) !== undefined) {
+        return code;
+      }
+      return PetCatalog.defaultCode();
     } catch (err) {
       hilog.error(DOMAIN, TAG, '读取宠物外观失败: %{public}s', JSON.stringify(err));
-      return PetSpeciesCatalog.defaultCode();
+      return PetCatalog.defaultCode();
     }
   }
 

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 116" width="112" height="116">
+<g transform="translate(56,60) scale(0.92)">
+<circle r="32" fill="#A6C77E" stroke="#8A9A5B" stroke-width="2.6"/>
+<ellipse rx="23.68" ry="25.6" fill="#F3F1DE"/>
+<circle cx="14.72" cy="0" r="1.44" fill="#4A4A3A"/>
+<circle cx="11.91" cy="9.4" r="1.44" fill="#4A4A3A"/>
+<circle cx="4.55" cy="15.22" r="1.44" fill="#4A4A3A"/>
+<circle cx="-4.55" cy="15.22" r="1.44" fill="#4A4A3A"/>
+<circle cx="-11.91" cy="9.4" r="1.44" fill="#4A4A3A"/>
+<circle cx="-14.72" cy="0" r="1.44" fill="#4A4A3A"/>
+<circle cx="-11.91" cy="-9.4" r="1.44" fill="#4A4A3A"/>
+<circle cx="-4.55" cy="-15.22" r="1.44" fill="#4A4A3A"/>
+<circle cx="4.55" cy="-15.22" r="1.44" fill="#4A4A3A"/>
+<circle cx="11.91" cy="-9.4" r="1.44" fill="#4A4A3A"/>
+</g>
+</svg>

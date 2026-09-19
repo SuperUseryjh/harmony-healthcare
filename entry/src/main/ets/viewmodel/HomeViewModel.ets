@@ -1,7 +1,7 @@
 import { AdviceContext, AdviceEngine, AdviceItem } from '../engine/AdviceEngine';
 import { PetEngine, PetState } from '../engine/PetEngine';
 import { DailySummary } from '../model/DailySummary';
-import { PetSpecies, PetSpeciesCatalog } from '../model/PetSpecies';
+import { PetCatalog, PetSpecies } from '../model/PetSpecies';
 import { MealRecordDao } from '../database/MealRecordDao';
 import { DailySummaryDao } from '../database/DailySummaryDao';
 import { CheckinRefreshResult, CheckinService } from '../service/CheckinService';
@@ -51,9 +51,8 @@ export class HomeData {
   /** 今日已记录的主餐数（早/午/晚），加餐不计入 */
   mainMealCount: number = 0;
   /** 当前宠物物种 */
-  speciesCode: string = PetSpeciesCatalog.defaultCode();
-  speciesLabel: string =
-    PetSpeciesCatalog.find(PetSpeciesCatalog.defaultCode()).label;
+  speciesCode: string = '';
+  speciesLabel: string = '宠物';
   /** 宠物状态 */
   pet: PetState = new PetState();
 }
@@ -141,21 +140,28 @@ export class HomeViewModel {
     data.mainMealCount = PetEngine.countMainMeals(mealTypes);
     HomeViewModel.fillMealPrompt(data, mealTypes);
 
-    const species: PetSpecies =
-      PetSpeciesCatalog.find(await PetService.loadSpeciesCode());
-    data.speciesCode = species.code;
-    data.speciesLabel = species.label;
+    // 等配置装载完再取，否则会拿到空目录。配置是随包发布的资源，
+    // 正常情况早就绪；真失败时降级成一句提示，而不是让卡片空白一片。
+    await PetCatalog.waitReady();
+    const species: PetSpecies | undefined =
+      PetCatalog.find(await PetService.loadSpeciesCode());
+    if (species === undefined) {
+      data.pet.message = '宠物配置未装载成功，重启应用试试';
+    } else {
+      data.speciesCode = species.code;
+      data.speciesLabel = species.label;
 
-    // 宠物的"年龄"用累计有记录的天数，而不是注册天数——
-    // 后者躺着也能涨，前者必须真的记录过才算
-    const growDays: number = await DailySummaryDao.countDays();
-    data.pet = PetEngine.evaluate(data.mainMealCount, data.activityMin, data.waterDone,
-      data.streakDays, growDays, species);
+      // 宠物的"年龄"用累计有记录的天数，而不是注册天数——
+      // 后者躺着也能涨，前者必须真的记录过才算
+      const growDays: number = await DailySummaryDao.countDays();
+      data.pet = PetEngine.evaluate(data.mainMealCount, data.activityMin, data.waterDone,
+        data.streakDays, growDays, species);
 
-    // 调试预设优先：长按宠物卡片切换，只覆盖显示、不改真实数据
-    const debugPet: PetState | undefined = PetDebug.resolve(species);
-    if (debugPet !== undefined) {
-      data.pet = debugPet;
+      // 调试预设优先：长按宠物卡片切换，只覆盖显示、不改真实数据
+      const debugPet: PetState | undefined = PetDebug.resolve(species);
+      if (debugPet !== undefined) {
+        data.pet = debugPet;
+      }
     }
 
     data.advices = HomeViewModel.buildAdvices(summary, plan);

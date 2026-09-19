@@ -1,5 +1,5 @@
-import { PetExpression, PetStage } from '../engine/PetEngine';
-import { PET_SPECIES, PetSpecies, PetSpeciesCatalog } from '../model/PetSpecies';
+import { PetExpression } from '../engine/PetEngine';
+import { PetCatalog, PetSpecies, PetStage } from '../model/PetSpecies';
 import { Theme } from '../utils/Theme';
 import { OverlayHeader } from './OverlayHeader';
 import { PetView } from './PetView';
@@ -9,19 +9,26 @@ const COLUMNS: number = 3;
 /** 单个格子高度：缩略图(116×0.62≈72) + 文字 + 内边距 */
 const CELL_HEIGHT: number = 108;
 const GRID_GAP: number = 10;
+const PREVIEW_SCALE: number = 0.62;
+
+/** @Builder 的参数载体：单对象参数才能走按引用传递 */
+class PreviewParam {
+  stage: PetStage = new PetStage();
+  expression: number = PetExpression.NORMAL;
+}
 
 /**
  * 宠物选择面板（全屏覆盖，点首页宠物卡片唤出）。
  *
- * 缩略图用真实的阶段与表情渲染，而不是画一组抽象图标——
- * 用户看到的直接就是"换成它之后长什么样"。
+ * 物种列表来自 pet_config.json，加物种不需要改这里。
+ * 缩略图用真实阶段渲染：当前在用的物种显示它此刻的样子，
+ * 其他物种显示最终形态——否则刚玩两天的人看到的全是幼体，选不出喜欢哪个。
  */
 @Component
 export struct PetPickerPanel {
-  /** 当前正在使用的物种，用于高亮 */
-  @Prop currentCode: string = PetSpeciesCatalog.defaultCode();
-  /** 用真实的阶段与表情渲染缩略图 */
-  @Prop stage: number = PetStage.EGG;
+  @Prop currentCode: string = '';
+  /** 当前物种所处的阶段下标 */
+  @Prop currentStageIndex: number = 0;
   @Prop expression: number = PetExpression.NORMAL;
 
   onClose: () => void = () => {};
@@ -33,6 +40,33 @@ export struct PetPickerPanel {
 
   aboutToAppear(): void {
     this.selectedCode = this.currentCode;
+  }
+
+  private previewStageOf(spec: PetSpecies): PetStage {
+    const last: number = spec.stages.length - 1;
+    if (spec.code === this.currentCode) {
+      return spec.stages[Math.min(this.currentStageIndex, last)];
+    }
+    return spec.stages[last];
+  }
+
+  @Builder
+  preview(param: PreviewParam) {
+    PetView({
+      imagePath: param.stage.image,
+      expression: param.expression,
+      stageScale: param.stage.scale,
+      faceCx: param.stage.face.cx,
+      faceCy: param.stage.face.cy,
+      faceEyeDx: param.stage.face.eyeDx,
+      faceEyeDy: param.stage.face.eyeDy,
+      faceEyeR: param.stage.face.eyeR,
+      faceBlushDx: param.stage.face.blushDx,
+      faceBlushDy: param.stage.face.blushDy,
+      faceBlushR: param.stage.face.blushR,
+      faceSingle: param.stage.face.single,
+      renderScale: PREVIEW_SCALE
+    })
   }
 
   build() {
@@ -47,20 +81,15 @@ export struct PetPickerPanel {
 
       Scroll() {
         Column({ space: 14 }) {
-          Text('选一个陪你坚持的伙伴。水果不走孵化，会直接从青果开始慢慢长大。')
+          Text('造型和进阶规则都来自 pet_config.json，换 PNG 只需要改配置里的文件名')
             .fontSize(12).fontColor(Theme.TEXT_TERTIARY).width('100%')
 
           Grid() {
             // key 带 selectedCode：选中态变化时重建格子，否则边框和底色不会跟着变
-            ForEach(PET_SPECIES, (spec: PetSpecies) => {
+            ForEach(PetCatalog.all(), (spec: PetSpecies) => {
               GridItem() {
                 Column({ space: 2 }) {
-                  PetView({
-                    speciesCode: spec.code,
-                    stage: this.stage,
-                    expression: this.expression,
-                    renderScale: 0.62
-                  })
+                  this.preview({ stage: this.previewStageOf(spec), expression: this.expression })
                   Text(spec.label)
                     .fontSize(12)
                     .fontWeight(spec.code === this.selectedCode
@@ -89,10 +118,10 @@ export struct PetPickerPanel {
           .columnsGap(GRID_GAP)
           .rowsGap(GRID_GAP)
           .width('100%')
-          .height(Math.ceil(PET_SPECIES.length / COLUMNS) * CELL_HEIGHT
-            + (Math.ceil(PET_SPECIES.length / COLUMNS) - 1) * GRID_GAP)
+          .height(Math.ceil(PetCatalog.all().length / COLUMNS) * CELL_HEIGHT
+            + (Math.ceil(PetCatalog.all().length / COLUMNS) - 1) * GRID_GAP)
 
-          Text('阶段由累计记录天数决定：3 天、7 天、30 天各进一级')
+          Text(`共 ${PetCatalog.all().length} 个伙伴，可自行往 pet_config.json 里加`)
             .fontSize(11).fontColor(Theme.TEXT_TERTIARY).width('100%')
         }
         .width('100%')

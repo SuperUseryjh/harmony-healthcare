@@ -1,13 +1,5 @@
 import { MealType } from '../model/Enums';
-import { PetSpecies, PetSpeciesCatalog } from '../model/PetSpecies';
-
-/** 成长阶段 */
-export enum PetStage {
-  EGG = 0,
-  BABY = 1,
-  GROWING = 2,
-  ADULT = 3
-}
+import { PetFace, PetSpecies, PetStage } from '../model/PetSpecies';
 
 /** 表情，由三项状态的平均值决定 */
 export enum PetExpression {
@@ -17,10 +9,21 @@ export enum PetExpression {
 }
 
 export class PetState {
-  /** 当前物种编码，视图据此决定画什么 */
-  speciesCode: string = PetSpeciesCatalog.defaultCode();
-  stage: number = PetStage.EGG;
+  /** 当前物种编码，视图据此决定取哪一套配置 */
+  speciesCode: string = '';
+  /** 阶段下标（0 开始）。几个阶段由物种配置决定，不再是固定 4 个 */
+  stage: number = 0;
   stageName: string = '';
+  stageCount: number = 0;
+  isMaxStage: boolean = false;
+
+  /** 当前阶段的图片（rawfile 相对路径），视图直接拿去 Image */
+  imagePath: string = '';
+  /** 当前阶段的整体缩放。表情叠加要用同一个值，才能跟着身体一起缩放 */
+  stageScale: number = 1;
+  /** 当前阶段的表情叠加位置 */
+  face: PetFace = PetFace.front();
+
   expression: number = PetExpression.NORMAL;
 
   /** 三项状态，取值 0-100 */
@@ -32,7 +35,6 @@ export class PetState {
   growDays: number = 0;
   /** 距离下一阶段还差几天；已到最高阶段为 0 */
   daysToNextStage: number = 0;
-  isMaxStage: boolean = false;
 
   /** 宠物说的一句话，直接显示在卡片上 */
   message: string = '';
@@ -62,11 +64,11 @@ function clamp01(value: number): number {
  *   心情 ← 连续打卡天数
  *
  * 于是"想让宠物状态好"和"想坚持健康习惯"就是同一个动作，激励不需要额外解释。
+ *
+ * 阶段（几个阶段、几天进阶、叫什么、长什么样）完全不在这里写死，
+ * 全部来自 PetSpecies 的配置。
  */
 export class PetEngine {
-  /** 各阶段所需的累计记录天数 */
-  static readonly STAGE_THRESHOLDS: number[] = [0, 3, 7, 30];
-
   /** 运动满多少分钟算活力满分的一半 */
   static readonly ACTIVITY_FULL_MIN: number = 20;
   /** 连续多少天算心情满分 */
@@ -86,38 +88,39 @@ export class PetEngine {
     return count;
   }
 
+  /**
+   * @param growDays 累计有记录的天数，用来判定阶段
+   * @param species  物种配置，提供阶段表与脸型。必传——阶段规则全部来自它
+   */
   static evaluate(mainMealCount: number, activityMin: number, waterDone: boolean,
-    streakDays: number, growDays: number, species?: PetSpecies): PetState {
-    const target: PetSpecies = species === undefined
-      ? PetSpeciesCatalog.find(PetSpeciesCatalog.defaultCode())
-      : species;
-
+    streakDays: number, growDays: number, species: PetSpecies): PetState {
     const state: PetState = new PetState();
-    state.speciesCode = target.code;
+    state.speciesCode = species.code;
     state.growDays = growDays;
 
     state.fullness = clamp01(mainMealCount / 3) * 100;
     state.vitality = clamp01(activityMin / PetEngine.ACTIVITY_FULL_MIN) * 50 + (waterDone ? 50 : 0);
     state.mood = clamp01(streakDays / PetEngine.MOOD_FULL_DAYS) * 100;
 
-    let stage: number = 0;
-    for (let i = 0; i < PetEngine.STAGE_THRESHOLDS.length; i++) {
-      if (growDays >= PetEngine.STAGE_THRESHOLDS[i]) {
-        stage = i;
+    // 取最后一个满足 minDays 的阶段。配置已在装载时按 minDays 排好序
+    let index: number = 0;
+    for (let i = 0; i < species.stages.length; i++) {
+      if (growDays >= species.stages[i].minDays) {
+        index = i;
       }
     }
-    // 不经历蛋阶段的物种（水果）直接从小果起步。
-    // 写在这里而不是改门槛数组，是因为"门槛"描述的是天数和阶段的关系，
-    // 而"有没有蛋"是物种本身的属性，两件事不该混在一起。
-    if (!target.hasEgg && stage === PetStage.EGG) {
-      stage = PetStage.BABY;
-    }
+    const current: PetStage = species.stages[index];
 
-    state.stage = stage;
-    state.stageName = target.stageNames[stage];
-    state.isMaxStage = stage === PetEngine.STAGE_THRESHOLDS.length - 1;
+    state.stage = index;
+    state.stageCount = species.stages.length;
+    state.stageName = current.name;
+    state.isMaxStage = index === species.stages.length - 1;
     state.daysToNextStage =
-      state.isMaxStage ? 0 : PetEngine.STAGE_THRESHOLDS[stage + 1] - growDays;
+      state.isMaxStage ? 0 : species.stages[index + 1].minDays - growDays;
+
+    state.imagePath = current.image;
+    state.stageScale = current.scale;
+    state.face = current.face;
 
     const average: number = (state.fullness + state.vitality + state.mood) / 3;
     if (average >= 70) {
@@ -128,17 +131,20 @@ export class PetEngine {
       state.expression = PetExpression.SAD;
     }
 
-    state.message = PetEngine.buildMessage(state);
+    state.message = PetEngine.buildMessage(state, current.hint);
     return state;
   }
 
   /**
    * 宠物台词。优先给"最欠缺的那一项"提示，因为用户最需要的是一条可执行的建议，
    * 而不是一句笼统的加油。
+   *
+   * 第一阶段如果配置了 hint，就优先用它——这时用户还没有任何记录，
+   * 说"再记录 N 天就孵化了"比说"肚子饿了"更能给出明确目标。
    */
-  private static buildMessage(state: PetState): string {
-    if (state.stage === PetStage.EGG) {
-      return `再记录 ${state.daysToNextStage} 天就能孵化了`;
+  private static buildMessage(state: PetState, hint: string): string {
+    if (state.stage === 0 && !state.isMaxStage && hint.length > 0) {
+      return hint.replace('{n}', String(state.daysToNextStage));
     }
 
     const lowest: number = Math.min(state.fullness, Math.min(state.vitality, state.mood));

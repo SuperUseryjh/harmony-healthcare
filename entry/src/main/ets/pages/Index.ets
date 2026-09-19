@@ -225,7 +225,7 @@ struct Index {
         } else if (this.activeOverlay === OVERLAY_PET_PICKER) {
           PetPickerPanel({
             currentCode: this.pickerCode,
-            stage: this.pickerStage,
+            currentStageIndex: this.pickerStage,
             expression: this.pickerExpression,
             onClose: () => {
               // 每次点选都已经递增过 dataVersion，这里不必再刷一遍
@@ -241,9 +241,6 @@ struct Index {
     .width('100%')
     .height('100%')
     .alignContent(Alignment.Bottom)
-    .linearGradient({
-      angle: 180,
-      colors: [[Theme.BG_TOP, 0.0], [Theme.BG_BOTTOM, 1.0]]
-    })
+    .backgroundColor(Theme.BG_BOTTOM)
   }
 }
