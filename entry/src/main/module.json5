@@ -68,6 +68,21 @@
             "resource": "$profile:backup_config"
           }
         ],
+      },
+      {
+        // 桌面卡片的提供方。卡片 UI 跑在桌面进程里，数据由这个扩展算好推过去
+        "name": "EntryFormAbility",
+        "srcEntry": "./ets/entryformability/EntryFormAbility.ets",
+        "label": "$string:pet_card_2x2_name",
+        "description": "$string:pet_card_desc",
+        "type": "form",
+        "exported": false,
+        "metadata": [
+          {
+            "name": "ohos.extension.form",
+            "resource": "$profile:form_config"
+          }
+        ],
       }
     ]
   }

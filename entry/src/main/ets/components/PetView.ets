@@ -1,11 +1,16 @@
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { PetExpression } from '../engine/PetEngine';
+
+const DOMAIN: number = 0x0000;
+const TAG: string = 'PetView';
 
 /** 图片与表情共用的逻辑坐标系尺寸，所有造型资源都按这个尺寸产出 */
 const CANVAS_WIDTH: number = 112;
 const CANVAS_HEIGHT: number = 116;
 
-const INK: string = '#5A4B3C';
-const BLUSH: string = '#F2B49E';
+// 与造型 SVG 的描边同色，否则表情会和身体轮廓明显分家
+const INK: string = '#2A3833';
+const BLUSH: string = '#F2A08C';
 
 /**
  * 宠物形象。
@@ -22,11 +27,13 @@ const BLUSH: string = '#F2B49E';
  */
 @Component
 export struct PetView {
-  /** 当前阶段的图片，rawfile 下的相对路径 */
+  /** 当前阶段的图片：内置宠物是 rawfile 相对路径，用户自建的是 file:// 沙箱 URI */
   @Prop @Watch('onStateChanged') imagePath: string = '';
   @Prop @Watch('onStateChanged') expression: number = PetExpression.NORMAL;
   /** 当前阶段整体缩放，表情要跟着一起缩 */
   @Prop @Watch('onStateChanged') stageScale: number = 1;
+  /** false 时只显示图片本体。导入的照片通常自带五官，叠上我们的眼睛会变成四只眼 */
+  @Prop @Watch('onStateChanged') showFace: boolean = true;
 
   /** 表情叠加位置，来自配置的阶段脸型 */
   @Prop @Watch('onStateChanged') faceCx: number = 0;
@@ -48,12 +55,17 @@ export struct PetView {
   /** Canvas 就绪前不能绘制，此时只记录状态，由 onReady 补画 */
   private ready: boolean = false;
 
+  /** 用户自建的宠物图片落在沙箱里，要用 file:// URI 直接加载 */
+  private isSandboxImage(): boolean {
+    return this.imagePath.startsWith('file://');
+  }
+
   /**
    * @Prop 变化时组件会重新渲染，但 Canvas 的内容是绘制上去的，不会跟着变，
    * 所以表情层必须显式重绘。图片那层由框架自己换。
    */
   onStateChanged(): void {
-    if (this.ready) {
+    if (this.ready && this.showFace) {
       this.drawFace();
     }
   }
@@ -120,20 +132,35 @@ export struct PetView {
   build() {
     Stack() {
       if (this.imagePath.length > 0) {
-        Image($rawfile(this.imagePath))
+        // 两个分支不能合并成一个表达式：内置走 Resource，自建走字符串 URI，
+        // ArkUI 这里不接受把两种 src 类型混在一个三元里
+        if (this.isSandboxImage()) {
+          Image(this.imagePath)
+            .width(CANVAS_WIDTH * this.renderScale)
+            .height(CANVAS_HEIGHT * this.renderScale)
+            .objectFit(ImageFit.Fill)
+            .draggable(false)
+            .onError(() => {
+              hilog.error(DOMAIN, TAG, '宠物图片加载失败: %{public}s', this.imagePath);
+            })
+        } else {
+          Image($rawfile(this.imagePath))
+            .width(CANVAS_WIDTH * this.renderScale)
+            .height(CANVAS_HEIGHT * this.renderScale)
+            // 图片与容器的宽高比一致，用 Fill 保证两层像素级对齐
+            .objectFit(ImageFit.Fill)
+            .draggable(false)
+        }
+      }
+      if (this.showFace) {
+        Canvas(this.ctx)
           .width(CANVAS_WIDTH * this.renderScale)
           .height(CANVAS_HEIGHT * this.renderScale)
-          // 图片与容器的宽高比一致，用 Fill 保证两层像素级对齐
-          .objectFit(ImageFit.Fill)
-          .draggable(false)
+          .onReady(() => {
+            this.ready = true;
+            this.drawFace();
+          })
       }
-      Canvas(this.ctx)
-        .width(CANVAS_WIDTH * this.renderScale)
-        .height(CANVAS_HEIGHT * this.renderScale)
-        .onReady(() => {
-          this.ready = true;
-          this.drawFace();
-        })
     }
     .width(CANVAS_WIDTH * this.renderScale)
     .height(CANVAS_HEIGHT * this.renderScale)

@@ -1,8 +1,3 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 116" width="112" height="116">
-<g transform="translate(56,60) scale(0.85)">
-<ellipse cx="-7" cy="23" rx="31" ry="23" fill="#F7DE9E" stroke="#D6C29E" stroke-width="2.6"/>
-<ellipse cx="-10" cy="25" rx="15" ry="9" fill="#EFCB7A" transform="rotate(-13 -10 25)"/>
-<circle cx="14" cy="-10" r="20" fill="#F7DE9E" stroke="#D6C29E" stroke-width="2.6"/>
-<path d="M28 -13 Q49 -7 28 1 Z" fill="#E9A23B" stroke="#D8933A" stroke-width="2" stroke-linejoin="round"/>
-</g>
+<g transform="translate(56,60) scale(0.85)"><ellipse cx="-10" cy="18" rx="28" ry="21" fill="#F5D98B" stroke="#2A3833" stroke-width="5.8" stroke-linejoin="round" stroke-linecap="round"/><circle cx="10" cy="-12" r="19" fill="#F5D98B" stroke="#2A3833" stroke-width="5.8" stroke-linejoin="round" stroke-linecap="round"/><ellipse cx="-10" cy="18" rx="28" ry="21" fill="#F5D98B"/><circle cx="10" cy="-12" r="19" fill="#F5D98B"/><ellipse cx="2" cy="-20" rx="6" ry="4.5" transform="rotate(-30 2 -20)" fill="#FFFFFF" opacity="0.45"/><ellipse cx="-10" cy="20" rx="14" ry="9" transform="rotate(-14 -10 20)" fill="#e1c982" stroke="#2A3833" stroke-width="2.2"/><path d="M26 -17 Q42 -12 42 -9 Q42 -6 26 -3 Z" fill="#E8A33D" stroke="#2A3833" stroke-width="2.2" stroke-linejoin="round"/></g>
 </svg>

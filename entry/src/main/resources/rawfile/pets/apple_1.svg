@@ -1,7 +1,3 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 116" width="112" height="116">
-<g transform="translate(56,60) scale(0.8)">
-<circle r="32" fill="#A8CE86" stroke="#C4494A" stroke-width="2.6"/>
-<path d="M0 -28.72 L0 -40.32" fill="none" stroke="#8A6B45" stroke-width="3" stroke-linecap="round"/>
-<path d="M0 -40.32 Q14.72 -50.56 20.48 -40.96 Q10.24 -33.92 0 -40.32 Z" fill="#6B9E58" stroke="#5E8A4E" stroke-width="2"/>
-</g>
+<g transform="translate(56,60) scale(0.8)"><path d="M0 -23 C6 -29 12 -31 17 -30 C27 -28 31 -17 31 -1 C31 19 18 33 0 33 C-18 33 -31 19 -31 -1 C-31 -17 -27 -28 -17 -30 C-12 -31 -6 -29 0 -23 Z" fill="#cdd0a8" stroke="#2A3833" stroke-width="2.9" stroke-linejoin="round" stroke-linecap="round"/><ellipse cx="-15" cy="-14" rx="8" ry="5.5" transform="rotate(-30 -15 -14)" fill="#FFFFFF" opacity="0.4"/><path d="M0 -25 L1 -39" fill="none" stroke="#8A6A45" stroke-width="3.2" stroke-linecap="round"/><path d="M2 -33 Q15 -43 20 -35 Q11 -28 2 -33 Z" fill="#6E9E6B" stroke="#567a57" stroke-width="2.2" stroke-linejoin="round"/><path d="M0 -32 Q-11.049999999999999 -40.5 -15.299999999999999 -33.7 Q-7.6499999999999995 -27.75 0 -32 Z" fill="#6E9E6B" stroke="#567a57" stroke-width="2.2" stroke-linejoin="round"/></g>
 </svg>

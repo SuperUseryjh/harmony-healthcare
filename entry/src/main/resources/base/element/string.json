@@ -19,6 +19,18 @@
     {
       "name": "calendar_write_reason",
       "value": "用于把早午晚餐的打卡提醒写入系统日历，应用关闭后仍能准时提醒"
+    },
+    {
+      "name": "pet_card_2x2_name",
+      "value": "今日伙伴"
+    },
+    {
+      "name": "pet_card_2x4_name",
+      "value": "今日伙伴 · 详细"
+    },
+    {
+      "name": "pet_card_desc",
+      "value": "在桌面看宠物的状态和今天的热量进度，点一下回到应用打卡"
     }
   ]
 }

@@ -23,6 +23,11 @@ export class PetState {
   stageScale: number = 1;
   /** 当前阶段的表情叠加位置 */
   face: PetFace = PetFace.front();
+  /**
+   * 是否叠加表情。导入的照片通常自带五官，那种物种在配置里就把这项关掉，
+   * 视图必须跟着它走——否则"关掉叠加眼睛"的开关等于没接线。
+   */
+  faceOn: boolean = true;
 
   expression: number = PetExpression.NORMAL;
 
@@ -121,6 +126,7 @@ export class PetEngine {
     state.imagePath = current.image;
     state.stageScale = current.scale;
     state.face = current.face;
+    state.faceOn = current.faceOn;
 
     const average: number = (state.fullness + state.vitality + state.mood) / 3;
     if (average >= 70) {

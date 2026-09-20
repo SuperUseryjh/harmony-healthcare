@@ -134,6 +134,8 @@ export struct HomePage {
         .backgroundColor(Theme.TRACK)
         .height(6)
         .layoutWeight(1)
+        // 记录一餐后数值是跳变的，加个短动画让它滑过去
+        .animation({ duration: Theme.DURATION_BASE, curve: Curve.EaseOut })
       Text(`${Math.round(param.value)}`)
         .fontSize(10).fontColor(Theme.TEXT_TERTIARY).width(20).textAlign(TextAlign.End)
     }
@@ -159,6 +161,7 @@ export struct HomePage {
         .color(param.barColor)
         .backgroundColor(Theme.TRACK)
         .height(7)
+        .animation({ duration: Theme.DURATION_BASE, curve: Curve.EaseOut })
     }
     .width('100%')
   }
@@ -189,6 +192,8 @@ export struct HomePage {
     .backgroundColor(Theme.CARD)
     .borderRadius(Theme.RADIUS_CARD)
     .border({ width: 1, color: Theme.LINE })
+    // 卡片是普通 Column，没有 Button 那套自带按压反馈，按下时给一点即时变化
+    .stateStyles({ pressed: { .opacity(0.68) } })
     .onClick(() => {
       void this.tapCard(param.action);
     })
@@ -258,20 +263,30 @@ export struct HomePage {
               faceBlushDx: this.data.pet.face.blushDx,
               faceBlushDy: this.data.pet.face.blushDy,
               faceBlushR: this.data.pet.face.blushR,
-              faceSingle: this.data.pet.face.single
+              faceSingle: this.data.pet.face.single,
+              showFace: this.data.pet.faceOn
             })
 
             Column({ space: 9 }) {
-              Row() {
-                Text(`${this.data.speciesLabel} · ${this.data.pet.stageName}`)
-                  .fontSize(15).fontWeight(FontWeight.Medium).fontColor(Theme.TEXT_PRIMARY)
-                Text(` · 已陪伴 ${this.data.pet.growDays} 天`)
-                  .fontSize(12).fontColor(Theme.TEXT_TERTIARY)
-                Blank()
-                Text(this.data.pet.isMaxStage ? '已成熟' : `再 ${this.data.pet.daysToNextStage} 天成长`)
-                  .fontSize(11).fontColor(Theme.PRIMARY)
+              // 名字、阶段、年龄、进阶提示原本挤在一行。自建伙伴的名字最多 8 个字，
+              // 四项加起来会顶出卡片，所以拆成两行，名字过长时省略而不是撑破布局
+              Column({ space: 3 }) {
+                Row({ space: 6 }) {
+                  Text(`${this.data.speciesLabel} · ${this.data.pet.stageName}`)
+                    .fontSize(15).fontWeight(FontWeight.Medium).fontColor(Theme.TEXT_PRIMARY)
+                    .layoutWeight(1).maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+
+                  Text(this.data.pet.isMaxStage ? '已成熟' : `再 ${this.data.pet.daysToNextStage} 天成长`)
+                    .fontSize(11).fontColor(Theme.PRIMARY).maxLines(1)
+                }
+                .width('100%')
+
+                Text(`已陪伴 ${this.data.pet.growDays} 天`)
+                  .fontSize(12).fontColor(Theme.TEXT_TERTIARY).width('100%')
               }
               .width('100%')
+              .alignItems(HorizontalAlign.Start)
 
               this.petBar({ label: '饱食', value: this.data.pet.fullness, color: Theme.PRIMARY })
               this.petBar({ label: '活力', value: this.data.pet.vitality, color: Theme.SUCCESS })
@@ -301,6 +316,7 @@ export struct HomePage {
         .backgroundColor(Theme.CARD)
         .borderRadius(Theme.RADIUS_CARD)
         .border({ width: 1, color: Theme.LINE })
+        .stateStyles({ pressed: { .opacity(0.68) } })
         .onClick(() => {
           this.onOpenPetPicker(this.data.speciesCode, this.data.pet.stage,
             this.data.pet.expression);

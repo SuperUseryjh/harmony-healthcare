@@ -3,7 +3,8 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { DbHelper } from '../database/DbHelper';
-import { PetCatalog } from '../model/PetSpecies';
+import { PetCatalog, PetSpecies } from '../model/PetSpecies';
+import { PetCreatorService } from '../service/PetCreatorService';
 import { AppContext } from '../utils/AppContext';
 
 const DOMAIN = 0x0000;
@@ -20,10 +21,17 @@ export default class EntryAbility extends UIAbility {
       hilog.error(DOMAIN, 'testTag', '数据库初始化失败: %{public}s', JSON.stringify(err));
     });
     // 宠物造型配置。页面侧会 await PetCatalog.waitReady() 再取，
-    // 所以这里同样不阻塞 Ability 启动
-    PetCatalog.init(this.context).catch((err: BusinessError) => {
-      hilog.error(DOMAIN, 'testTag', '宠物配置装载失败: %{public}s', JSON.stringify(err));
-    });
+    // 所以这里同样不阻塞 Ability 启动。
+    // 内置物种装完后再并入用户自建的：自建宠物存在 preferences 里，
+    // 读取是异步的，两个来源都就位才能让目录完整
+    PetCatalog.init(this.context)
+      .then(() => PetCreatorService.loadAll())
+      .then((list: PetSpecies[]) => {
+        PetCatalog.setUserPets(list);
+      })
+      .catch((err: BusinessError) => {
+        hilog.error(DOMAIN, 'testTag', '宠物配置装载失败: %{public}s', JSON.stringify(err));
+      });
   }
 
   onDestroy(): void {

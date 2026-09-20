@@ -1,28 +1,17 @@
+import { promptAction } from '@kit.ArkUI';
 import { PetExpression } from '../engine/PetEngine';
-import { PetCatalog, PetSpecies, PetStage } from '../model/PetSpecies';
+import { PetCatalog, PetSpecies } from '../model/PetSpecies';
+import { PetCreatorService } from '../service/PetCreatorService';
 import { Theme } from '../utils/Theme';
 import { OverlayHeader } from './OverlayHeader';
-import { PetView } from './PetView';
-
-/** 选择面板每行放几个 */
-const COLUMNS: number = 3;
-/** 单个格子高度：缩略图(116×0.62≈72) + 文字 + 内边距 */
-const CELL_HEIGHT: number = 108;
-const GRID_GAP: number = 10;
-const PREVIEW_SCALE: number = 0.62;
-
-/** @Builder 的参数载体：单对象参数才能走按引用传递 */
-class PreviewParam {
-  stage: PetStage = new PetStage();
-  expression: number = PetExpression.NORMAL;
-}
+import { PetGrid } from './PetGrid';
 
 /**
  * 宠物选择面板（全屏覆盖，点首页宠物卡片唤出）。
  *
  * 物种列表来自 pet_config.json，加物种不需要改这里。
- * 缩略图用真实阶段渲染：当前在用的物种显示它此刻的样子，
- * 其他物种显示最终形态——否则刚玩两天的人看到的全是幼体，选不出喜欢哪个。
+ * 缩略图的渲染规则（当前物种显示此刻的样子、其余显示最终形态）在 PetGrid 里，
+ * 与初始化第二步共用同一份实现。
  */
 @Component
 export struct PetPickerPanel {
@@ -34,39 +23,49 @@ export struct PetPickerPanel {
   onClose: () => void = () => {};
   /** 选中某个物种；保存与刷新由 Index 统一处理 */
   onPick: (code: string) => void = () => {};
+  /** 去创建自建伙伴 */
+  onCreate: () => void = () => {};
+  /** 删掉了自建伙伴；Index 要判断删的是不是当前在用的那个 */
+  onDeleted: (code: string) => void = () => {};
 
   /** 面板内的即时高亮，不等外部刷新 */
   @State selectedCode: string = '';
+  /** 删除后目录变了，靠它触发网格重建 */
+  @State listVersion: number = 0;
 
   aboutToAppear(): void {
     this.selectedCode = this.currentCode;
   }
 
-  private previewStageOf(spec: PetSpecies): PetStage {
-    const last: number = spec.stages.length - 1;
-    if (spec.code === this.currentCode) {
-      return spec.stages[Math.min(this.currentStageIndex, last)];
-    }
-    return spec.stages[last];
+  private customPets(): PetSpecies[] {
+    return PetCatalog.all().filter((s: PetSpecies) => s.custom);
   }
 
-  @Builder
-  preview(param: PreviewParam) {
-    PetView({
-      imagePath: param.stage.image,
-      expression: param.expression,
-      stageScale: param.stage.scale,
-      faceCx: param.stage.face.cx,
-      faceCy: param.stage.face.cy,
-      faceEyeDx: param.stage.face.eyeDx,
-      faceEyeDy: param.stage.face.eyeDy,
-      faceEyeR: param.stage.face.eyeR,
-      faceBlushDx: param.stage.face.blushDx,
-      faceBlushDy: param.stage.face.blushDy,
-      faceBlushR: param.stage.face.blushR,
-      faceSingle: param.stage.face.single,
-      renderScale: PREVIEW_SCALE
+  private confirmDelete(code: string, label: string): void {
+    promptAction.showDialog({
+      title: '删除伙伴',
+      message: `确定要删掉「${label}」吗？健康记录和成长进度都不受影响。`,
+      buttons: [
+        { text: '取消', color: Theme.TEXT_SECONDARY },
+        { text: '删除', color: Theme.PRIMARY }
+      ]
     })
+      .then((result: promptAction.ShowDialogSuccessResponse) => {
+        if (result.index === 1) {
+          void this.doDelete(code);
+        }
+      })
+      .catch(() => {
+        // 弹窗失败不处理，用户再点一次即可
+      });
+  }
+
+  private async doDelete(code: string): Promise<void> {
+    await PetCreatorService.remove(code);
+    const list: PetSpecies[] = await PetCreatorService.loadAll();
+    PetCatalog.setUserPets(list);
+    this.listVersion = this.listVersion + 1;
+    this.onDeleted(code);
   }
 
   build() {
@@ -81,47 +80,66 @@ export struct PetPickerPanel {
 
       Scroll() {
         Column({ space: 14 }) {
-          Text('造型和进阶规则都来自 pet_config.json，换 PNG 只需要改配置里的文件名')
-            .fontSize(12).fontColor(Theme.TEXT_TERTIARY).width('100%')
+          Button('＋ 做一个自己的伙伴')
+            .width('100%')
+            .height(44)
+            .fontSize(14)
+            .backgroundColor(Theme.PRIMARY_SOFT)
+            .fontColor(Theme.PRIMARY)
+            .borderRadius(Theme.RADIUS_CHIP)
+            .border({ width: 1, color: Theme.PRIMARY_LINE })
+            .onClick(() => {
+              this.onCreate();
+            })
 
-          Grid() {
-            // key 带 selectedCode：选中态变化时重建格子，否则边框和底色不会跟着变
-            ForEach(PetCatalog.all(), (spec: PetSpecies) => {
-              GridItem() {
-                Column({ space: 2 }) {
-                  this.preview({ stage: this.previewStageOf(spec), expression: this.expression })
+          PetGrid({
+            selectedCode: this.selectedCode,
+            currentCode: this.currentCode,
+            currentStageIndex: this.currentStageIndex,
+            expression: this.expression,
+            listVersion: this.listVersion,
+            onPick: (code: string) => {
+              this.selectedCode = code;
+              this.onPick(code);
+            }
+          })
+
+          // 自建伙伴单独列一份管理入口。不把删除放进格子里，
+          // 是因为格子本身是可点的选中区，里面再套一个删除按钮容易误触
+          if (this.customPets().length > 0) {
+            Column({ space: 8 }) {
+              Text('我做的伙伴').fontSize(13).fontColor(Theme.TEXT_SECONDARY).width('100%')
+              ForEach(this.customPets(), (spec: PetSpecies) => {
+                Row({ space: 10 }) {
                   Text(spec.label)
-                    .fontSize(12)
-                    .fontWeight(spec.code === this.selectedCode
-                      ? FontWeight.Medium : FontWeight.Normal)
-                    .fontColor(spec.code === this.selectedCode
-                      ? Theme.PRIMARY : Theme.TEXT_SECONDARY)
+                    .fontSize(14)
+                    .fontColor(Theme.TEXT_PRIMARY)
+                    .layoutWeight(1)
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+
+                  Text('删除')
+                    .fontSize(13)
+                    .fontColor(Theme.PRIMARY)
+                    .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+                    .borderRadius(Theme.RADIUS_CHIP)
+                    .border({ width: 1, color: Theme.PRIMARY_LINE })
+                    .stateStyles({ pressed: { .opacity(0.6) } })
+                    .onClick(() => {
+                      this.confirmDelete(spec.code, spec.label);
+                    })
                 }
                 .width('100%')
-                .height('100%')
-                .justifyContent(FlexAlign.Center)
-                .backgroundColor(spec.code === this.selectedCode
-                  ? Theme.PRIMARY_SOFT : Theme.CARD)
-                .borderRadius(Theme.RADIUS_CARD)
-                .border({
-                  width: spec.code === this.selectedCode ? 1.5 : 1,
-                  color: spec.code === this.selectedCode ? Theme.PRIMARY : Theme.LINE
-                })
-                .onClick(() => {
-                  this.selectedCode = spec.code;
-                  this.onPick(spec.code);
-                })
-              }
-            }, (spec: PetSpecies) => `${spec.code}-${this.selectedCode}`)
+                .padding({ left: 14, right: 14, top: 10, bottom: 10 })
+                .backgroundColor(Theme.CARD)
+                .borderRadius(Theme.RADIUS_CHIP)
+                .border({ width: 1, color: Theme.LINE })
+              }, (spec: PetSpecies) => `${spec.code}-${this.listVersion}`)
+            }
+            .width('100%')
           }
-          .columnsTemplate('1fr 1fr 1fr')
-          .columnsGap(GRID_GAP)
-          .rowsGap(GRID_GAP)
-          .width('100%')
-          .height(Math.ceil(PetCatalog.all().length / COLUMNS) * CELL_HEIGHT
-            + (Math.ceil(PetCatalog.all().length / COLUMNS) - 1) * GRID_GAP)
 
-          Text(`共 ${PetCatalog.all().length} 个伙伴，可自行往 pet_config.json 里加`)
+          Text(`共 ${PetCatalog.all().length} 个伙伴，其中 ${this.customPets().length} 个是你自己做的`)
             .fontSize(11).fontColor(Theme.TEXT_TERTIARY).width('100%')
         }
         .width('100%')

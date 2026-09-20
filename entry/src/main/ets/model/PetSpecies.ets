@@ -38,6 +38,8 @@ interface ConfigSpecies {
   code: string;
   label: string;
   face?: ConfigFace;
+  /** 省略时为 true。导入的照片通常自带五官，那种情况下要能关掉表情叠加 */
+  faceOn?: boolean;
   stages: ConfigStage[];
 }
 
@@ -79,17 +81,21 @@ export class PetStage {
   minDays: number = 0;
   /** 该阶段整体缩放，表情叠加要跟着一起用 */
   scale: number = 1;
-  /** rawfile 下的相对路径 */
+  /** rawfile 下的相对路径，或用户自建宠物的 file:// 沙箱 URI */
   image: string = '';
   hint: string = '';
   /** 已经解析好覆盖关系的脸型：阶段 > 物种 > 默认 */
   face: PetFace = PetFace.front();
+  /** false 时只显示图片本体，不叠加眼睛和腮红 */
+  faceOn: boolean = true;
 }
 
 export class PetSpecies {
   code: string = '';
   label: string = '';
   stages: PetStage[] = [];
+  /** true = 用户自建的伙伴，选择面板里会给删除入口 */
+  custom: boolean = false;
 }
 
 // ==================== 目录 ====================
@@ -108,7 +114,7 @@ function toFace(cfg: ConfigFace): PetFace {
   return face;
 }
 
-function toStage(cfg: ConfigStage, fallbackFace: PetFace): PetStage {
+function toStage(cfg: ConfigStage, fallbackFace: PetFace, faceOn: boolean): PetStage {
   const stage: PetStage = new PetStage();
   stage.name = cfg.name;
   stage.minDays = cfg.minDays;
@@ -116,6 +122,7 @@ function toStage(cfg: ConfigStage, fallbackFace: PetFace): PetStage {
   stage.image = cfg.image;
   stage.hint = cfg.hint === undefined ? '' : cfg.hint;
   stage.face = cfg.face === undefined ? fallbackFace : toFace(cfg.face);
+  stage.faceOn = faceOn;
   return stage;
 }
 
@@ -124,9 +131,11 @@ function toSpecies(cfg: ConfigSpecies): PetSpecies {
   species.code = cfg.code;
   species.label = cfg.label;
   const fallbackFace: PetFace = cfg.face === undefined ? PetFace.front() : toFace(cfg.face);
+  // 脸型是物种级的，但渲染层只拿到阶段，所以在这里就摊到每个阶段上
+  const faceOn: boolean = cfg.faceOn === undefined ? true : cfg.faceOn;
   const stages: PetStage[] = [];
   for (const rawStage of cfg.stages) {
-    stages.push(toStage(rawStage, fallbackFace));
+    stages.push(toStage(rawStage, fallbackFace, faceOn));
   }
   // 配置写反顺序时不至于让阶段判定错乱：判定依赖"取最后一个满足条件的"，
   // 而那个逻辑要求 minDays 递增，这里排一次更省心
@@ -143,6 +152,10 @@ function toSpecies(cfg: ConfigSpecies): PetSpecies {
  * 都只动配置和资源文件。
  */
 export class PetCatalog {
+  /** 内置物种，来自 rawfile 配置 */
+  private static builtinItems: PetSpecies[] = [];
+  /** 用户自建物种，来自 preferences。排在后面，所以 defaultCode 永远是内置的第一个 */
+  private static customItems: PetSpecies[] = [];
   private static items: PetSpecies[] = [];
   private static loaded: boolean = false;
   /** 装载中的 Promise，用于让调用方等它结束 */
@@ -169,6 +182,24 @@ export class PetCatalog {
 
   static all(): PetSpecies[] {
     return PetCatalog.items;
+  }
+
+  /**
+   * 换入用户自建物种。
+   *
+   * 内置在前、自建在后：defaultCode 取 items[0]，这样把宠物删光也不会把默认外观改成自建的那个。
+   */
+  static setUserPets(list: PetSpecies[]): void {
+    PetCatalog.customItems = list;
+    PetCatalog.rebuild();
+  }
+
+  static customCount(): number {
+    return PetCatalog.customItems.length;
+  }
+
+  private static rebuild(): void {
+    PetCatalog.items = PetCatalog.builtinItems.concat(PetCatalog.customItems);
   }
 
   /** 未加载完或编码写错时返回 undefined，由调用方决定怎么兜底 */
@@ -205,7 +236,8 @@ export class PetCatalog {
       }
       parsed.push(toSpecies(rawSpecies));
     }
-    PetCatalog.items = parsed;
+    PetCatalog.builtinItems = parsed;
+    PetCatalog.rebuild();
     PetCatalog.loaded = parsed.length > 0;
   }
 

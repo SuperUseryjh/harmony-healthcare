@@ -1,0 +1,44 @@
+{
+  "forms": [
+    {
+      "name": "PetCard2x2",
+      "displayName": "$string:pet_card_2x2_name",
+      "description": "$string:pet_card_desc",
+      "src": "./ets/widget/pages/PetCard2x2.ets",
+      "uiSyntax": "arkts",
+      "window": {
+        "designWidth": 720,
+        "autoDesignWidth": true
+      },
+      "colorMode": "light",
+      "isDynamic": true,
+      "isDefault": true,
+      "updateEnabled": true,
+      "updateDuration": 1,
+      "defaultDimension": "2*2",
+      "supportDimensions": [
+        "2*2"
+      ]
+    },
+    {
+      "name": "PetCard2x4",
+      "displayName": "$string:pet_card_2x4_name",
+      "description": "$string:pet_card_desc",
+      "src": "./ets/widget/pages/PetCard2x4.ets",
+      "uiSyntax": "arkts",
+      "window": {
+        "designWidth": 720,
+        "autoDesignWidth": true
+      },
+      "colorMode": "light",
+      "isDynamic": true,
+      "isDefault": false,
+      "updateEnabled": true,
+      "updateDuration": 1,
+      "defaultDimension": "2*4",
+      "supportDimensions": [
+        "2*4"
+      ]
+    }
+  ]
+}

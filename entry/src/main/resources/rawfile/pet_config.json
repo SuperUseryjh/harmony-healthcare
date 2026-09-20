@@ -7,7 +7,7 @@
       "code": "duck",
       "label": "小鸭",
       "face": {
-        "cx": 14, "cy": -10,
+        "cx": 10, "cy": -10,
         "eyeDx": 5, "eyeDy": -4, "eyeR": 3.2,
         "blushDx": 1, "blushDy": 9, "blushR": 3.6,
         "single": true
@@ -84,6 +84,12 @@
     {
       "code": "kiwi",
       "label": "猕猴桃",
+      "face": {
+        "cx": 0, "cy": -2.6,
+        "eyeDx": 7.5, "eyeDy": 0, "eyeR": 2.6,
+        "blushDx": 13, "blushDy": 7.7, "blushR": 2.9,
+        "single": false
+      },
       "stages": [
         { "name": "青果", "minDays": 0, "scale": 0.8, "image": "pets/kiwi_1.svg", "hint": "再记录 {n} 天就长开了" },
         { "name": "半熟", "minDays": 7, "scale": 0.92, "image": "pets/kiwi_2.svg" },
@@ -102,6 +108,12 @@
     {
       "code": "banana",
       "label": "香蕉",
+      "face": {
+        "cx": 0, "cy": 8,
+        "eyeDx": 7.5, "eyeDy": 0, "eyeR": 2.6,
+        "blushDx": 14, "blushDy": 8, "blushR": 2.8,
+        "single": false
+      },
       "stages": [
         { "name": "青果", "minDays": 0, "scale": 0.8, "image": "pets/banana_1.svg", "hint": "再记录 {n} 天就长开了" },
         { "name": "半熟", "minDays": 7, "scale": 0.92, "image": "pets/banana_2.svg" },
