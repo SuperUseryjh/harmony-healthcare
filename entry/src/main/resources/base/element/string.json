@@ -10,7 +10,7 @@
     },
     {
       "name": "EntryAbility_label",
-      "value": "label"
+      "value": "果伴"
     },
     {
       "name": "calendar_read_reason",
@@ -22,11 +22,11 @@
     },
     {
       "name": "pet_card_2x2_name",
-      "value": "今日伙伴"
+      "value": "果伴 · 今日"
     },
     {
       "name": "pet_card_2x4_name",
-      "value": "今日伙伴 · 详细"
+      "value": "果伴 · 详细"
     },
     {
       "name": "pet_card_desc",

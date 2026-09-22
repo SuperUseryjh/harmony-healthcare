@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 果伴的应用标志：一颗带嫩芽的果子，沿用宠物造型的那套语言（墨色描边 + 柔和填充 + 圆眼）
+       分层图标的前景与启动图标都由这份图形生成，改这里就够 -->
+  <g stroke="#2A3833" stroke-width="22" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M256 156 L256 88" fill="none" stroke="#4FAE8B" stroke-width="20"/>
+    <path d="M256 132 C214 130 176 110 168 76 C214 74 246 98 256 132 Z" fill="#4FAE8B"/>
+    <path d="M256 120 C300 118 336 96 344 62 C298 60 268 86 256 120 Z" fill="#63BF9C"/>
+  </g>
+  <circle cx="256" cy="300" r="152" fill="#E45B49" stroke="#2A3833" stroke-width="24"/>
+  <ellipse cx="188" cy="222" rx="52" ry="34" fill="#FFFFFF" opacity="0.22" transform="rotate(-30 188 222)"/>
+  <circle cx="194" cy="284" r="21" fill="#2A3833"/>
+  <circle cx="318" cy="284" r="21" fill="#2A3833"/>
+  <path d="M228 338 Q256 366 284 338" fill="none" stroke="#2A3833" stroke-width="15" stroke-linecap="round"/>
+</svg>
