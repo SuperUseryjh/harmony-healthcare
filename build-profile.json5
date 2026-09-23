@@ -5,13 +5,13 @@
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "certpath": "C:/Users/姚靖昊/.ohos/config/default_harmony-dev_z4Y1jZlVUFKuwrDjHLL4P8U7Ayz6U2GZ7g9c9AzcHiE=.cer",
+          "certpath": "C:\\Users\\姚靖昊\\.ohos\\config\\default_harmony-dev_z4Y1jZlVUFKuwrDjHLL4P8U7Ayz6U2GZ7g9c9AzcHiE=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001B6C523743D1DAF70F5D8901FD7AD1E0A5EDCAE7E009EA2EA5F239FDE620DCA23A5FE0FD63562983",
-          "profile": "C:/Users/姚靖昊/.ohos/config/default_harmony-dev_z4Y1jZlVUFKuwrDjHLL4P8U7Ayz6U2GZ7g9c9AzcHiE=.p7b",
+          "keyPassword": "0000001A352150B73E9703B9C29590DBA4BDF7D7AC201EEDD050B46ADCAC9788F55EFF674827F20E7891",
+          "profile": "C:\\Users\\姚靖昊\\.ohos\\config\\default_harmony-dev_z4Y1jZlVUFKuwrDjHLL4P8U7Ayz6U2GZ7g9c9AzcHiE=.p7b",
           "signAlg": "SHA256withECDSA",
-          "storeFile": "C:/Users/姚靖昊/.ohos/config/default_harmony-dev_z4Y1jZlVUFKuwrDjHLL4P8U7Ayz6U2GZ7g9c9AzcHiE=.p12",
-          "storePassword": "0000001BE84F3703E94DB0499A93CBEDA6FA8449A7081A9DCCD79642FAA42F3F12B58713AF7C71662045CA"
+          "storeFile": "C:\\Users\\姚靖昊\\.ohos\\config\\default_harmony-dev_z4Y1jZlVUFKuwrDjHLL4P8U7Ayz6U2GZ7g9c9AzcHiE=.p12",
+          "storePassword": "0000001A6930CACD8D62BBE98145FDC18AB6850519B27B4F0E7F29D3BE36D65A9C54A881382B04522662"
         }
       }
     ],
